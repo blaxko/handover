@@ -45,4 +45,10 @@ def resolve(graph, text: str) -> dict:
         return {"status": "clarify", "candidates": [_brief(m) for m in matches]}
 
     m = matches[0]
-    return {"status": "ok", "id": m["id"], "name": m["name"], "kind": m["kind"]}
+    return {
+        "status": "ok",
+        "id": m["id"],
+        "name": m["name"],
+        "kind": m["kind"],
+        "entity_status": m.get("status"),  # Person: 'active' or 'left'; Service: None
+    }

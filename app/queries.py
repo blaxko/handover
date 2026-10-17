@@ -92,6 +92,17 @@ RETURN node.id AS id, node.text AS text, score
 ORDER BY score DESC LIMIT 3
 """
 
+# Idempotency: has this event already been recorded as a Message?
+EVENT_EXISTS = """
+MATCH (e:Message {id:$event_id}) RETURN e.id AS id
+"""
+
+# Services a person currently owns (for "from owns it?" checks)
+OPEN_SERVICES_OF = """
+MATCH (p:Person {id:$person})-[o:OWNS]->(s:Service) WHERE o.valid_to IS NULL
+RETURN s.id AS service, s.name AS name
+"""
+
 # Invariant check (test and load --check): open OWNS edges per service
 INVARIANT_OPEN_OWNS = """
 MATCH (s:Service)
@@ -138,3 +149,25 @@ def blast_radius(graph, person: str) -> list[dict]:
 
 def open_owns_counts(graph) -> list[dict]:
     return db.read(graph, INVARIANT_OPEN_OWNS)
+
+
+# ---- writes (event path only) ----
+
+def event_exists(graph, event_id: str) -> bool:
+    return bool(db.read(graph, EVENT_EXISTS, {"event_id": event_id}))
+
+
+def open_services_of(graph, person: str) -> list[dict]:
+    return db.read(graph, OPEN_SERVICES_OF, {"person": person})
+
+
+def apply_handover(graph, params: dict) -> list[dict]:
+    return db.write(graph, T5_APPLY_HANDOVER, params)
+
+
+def apply_departure(graph, params: dict) -> list[dict]:
+    return db.write(graph, T5_DEPARTURE, params)
+
+
+def reassign_tickets(graph, params: dict) -> list[dict]:
+    return db.write(graph, T6_REASSIGN_TICKETS, params)
