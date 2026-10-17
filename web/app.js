@@ -1,4 +1,4 @@
-/* Handover demo page. No build step. Renders server text with textContent only. */
+/* Handover demo page. No build step. Server text goes in with textContent only. */
 (() => {
   'use strict';
 
@@ -11,6 +11,8 @@
   ];
   const DEMO_EVENT =
     "Tunde Bakare's last day was Friday. Ada Okafor takes over payments-api and ledger, effective 2026-10-17.";
+  const DEFAULT_FOCUS = ['p-tunde'];
+  const MAX_FOCUS = 6;
   const COLOURS = {
     Person: { background: '#dbe7fd', border: '#2f6fed' },
     Service: { background: '#d7f0e7', border: '#1f8a70' },
@@ -20,11 +22,15 @@
     Entity: { background: '#e5e7eb', border: '#6b7280' },
   };
 
+  // state.view: nodes and edges around the focus ids. state.full: whole graph (lazy).
+  // state.hl: what to highlight: {nodes, edges} from an answer, or {mode: 'event', effective}.
   const state = {
     token: null,
-    focusId: 'p-tunde',
-    base: null,      // {nodes, edges} from GET /graph
-    path: null,      // {nodes, edges} from the last /ask, or null
+    focusIds: DEFAULT_FOCUS,
+    view: { nodes: new Map(), edges: new Map() },
+    full: null,
+    showFull: false,
+    hl: null,
     lastQuestion: '',
     network: null,
     nodes: null,
@@ -32,6 +38,7 @@
   };
 
   const $ = (sel) => document.querySelector(sel);
+  const edgeKey = (e) => `${e.from}|${e.to}|${e.type}`;
 
   function el(tag, props = {}, children = []) {
     const node = document.createElement(tag);
@@ -151,10 +158,7 @@
       ]);
     }
     if (d.status === 'clarify') {
-      return setBody(box, [
-        el('p', { text: `${d.message} Pick one:` }),
-        chipRow(d.clarify, d.params),
-      ]);
+      return setBody(box, [el('p', { text: `${d.message} Pick one:` }), chipRow(d.clarify, d.params)]);
     }
     if (d.status === 'unknown') {
       const children = [el('p', { text: d.message })];
@@ -199,7 +203,59 @@
 
   // ---- graph view ----
 
-  const edgeKey = (e) => `${e.from}|${e.to}|${e.type}`;
+  // The highlighted edges: from the answer path, or the open edges an event created.
+  function highlightedEdges() {
+    if (!state.hl) return [];
+    if (state.hl.mode === 'event') {
+      return [...state.view.edges.values()].filter((e) =>
+        e.valid_from === state.hl.effective && !e.closed);
+    }
+    return state.hl.edges;
+  }
+
+  function highlightedNodeIds() {
+    if (!state.hl) return new Set();
+    if (state.hl.mode === 'event') {
+      const ids = new Set();
+      for (const e of highlightedEdges()) { ids.add(e.from); ids.add(e.to); }
+      return ids;
+    }
+    return new Set(state.hl.nodes.map((n) => n.id));
+  }
+
+  // Focused subgraph: the answer's path nodes (or, after an event, the people, services and
+  // tickets it touched), plus their direct neighbours. Nothing further out.
+  function focusedSubgraph() {
+    const answerMode = state.hl && state.hl.mode === 'answer';
+    const core = answerMode
+      ? new Set(state.hl.nodes.map((n) => n.id))
+      : new Set(state.focusIds);
+    const nodes = new Map();
+    const edges = new Map();
+    for (const e of state.view.edges.values()) {
+      if (core.has(e.from) || core.has(e.to)) edges.set(edgeKey(e), e);
+    }
+    for (const id of core) {
+      const n = state.view.nodes.get(id);
+      if (n) nodes.set(id, n);
+    }
+    for (const e of edges.values()) {
+      for (const id of [e.from, e.to]) {
+        if (!nodes.has(id) && state.view.nodes.has(id)) nodes.set(id, state.view.nodes.get(id));
+      }
+    }
+    for (const e of highlightedEdges()) edges.set(edgeKey(e), e);
+    // Answer path nodes always draw, even if the focus views did not fetch them.
+    if (state.hl && state.hl.mode !== 'event') {
+      for (const n of state.hl.nodes) if (!nodes.has(n.id)) nodes.set(n.id, n);
+    }
+    return { nodes, edges };
+  }
+
+  function visibleGraph() {
+    if (state.showFull && state.full) return state.full;
+    return focusedSubgraph();
+  }
 
   function ensureNetwork() {
     if (state.network) return true;
@@ -209,96 +265,138 @@
     state.network = new vis.Network($('#graph'), { nodes: state.nodes, edges: state.edges }, {
       autoResize: true,
       physics: { stabilization: { iterations: 150 }, barnesHut: { gravitationalConstant: -4000, springLength: 130 } },
-      nodes: { shape: 'box', margin: 8, font: { size: 13, color: '#15191f' }, borderWidth: 1 },
-      edges: { arrows: 'to', smooth: { type: 'dynamic' }, font: { size: 11, align: 'middle', color: '#4b5563', strokeWidth: 0 } },
+      nodes: { shape: 'box', margin: 8, font: { size: 14, color: '#15191f' }, borderWidth: 1 },
+      edges: { arrows: 'to', smooth: { type: 'dynamic' }, font: { size: 12, align: 'middle', color: '#4b5563', strokeWidth: 0 } },
       interaction: { hover: true, tooltipDelay: 150 },
     });
-    // Fit the view once the layout settles, so the graph is never drawn zoomed in.
     state.network.on('stabilizationIterationsDone', () => state.network.fit({ animation: false }));
     return true;
   }
 
-  function drawGraph() {
-    const pathNodeIds = new Set(state.path ? state.path.nodes.map((n) => n.id) : []);
-    const pathEdgeKeys = new Set(state.path ? state.path.edges.map(edgeKey) : []);
-
-    const nodeMap = new Map();
-    for (const n of (state.base ? state.base.nodes : [])) nodeMap.set(n.id, n);
-    for (const n of (state.path ? state.path.nodes : [])) nodeMap.set(n.id, n);
-
-    const edgeMap = new Map();
-    for (const e of (state.base ? state.base.edges : [])) edgeMap.set(edgeKey(e), e);
-    for (const e of (state.path ? state.path.edges : [])) edgeMap.set(edgeKey(e), e);
-
-    const nodeRows = [...nodeMap.values()].map((n) => {
-      const colour = COLOURS[n.label] || COLOURS.Entity;
-      const onPath = pathNodeIds.has(n.id);
-      return {
-        id: n.id,
-        label: n.name,
-        title: `${n.label}: ${n.name}`,
-        color: colour,
-        borderWidth: onPath ? 4 : 1,
-        font: { bold: onPath },
-        shadow: onPath,
-      };
-    });
-
-    const edgeRows = [];
-    for (const [key, e] of edgeMap) {
-      if (!nodeMap.has(e.from) || !nodeMap.has(e.to)) continue;
-      const onPath = pathEdgeKeys.has(key);
-      const closed = !!e.closed;
-      edgeRows.push({
-        id: key,
-        from: e.from,
-        to: e.to,
-        label: closed ? `${e.type} · closed` : e.type,
-        dashes: closed ? [6, 4] : false,
-        width: onPath ? 4 : 1.5,
-        color: closed ? { color: '#8a929e', highlight: '#8a929e' } : { color: onPath ? '#2f6fed' : '#1f2937' },
-        font: { color: closed ? '#6b7380' : '#4b5563', size: 11, strokeWidth: 0 },
-      });
-    }
+  function draw() {
+    // Path text first: it must show even if the canvas cannot draw.
+    setPathText();
+    const graphBox = $('#graph');
+    const { nodes, edges } = visibleGraph();
+    const hlNodes = highlightedNodeIds();
+    const hlEdges = new Set(highlightedEdges().map(edgeKey));
 
     if (!ensureNetwork()) {
-      setPathText();
+      showGraphMessage('warn', 'The graph library did not load from cdnjs. The answer path is listed below as text.');
       return;
     }
-    state.nodes.clear();
-    state.nodes.add(nodeRows);
-    state.edges.clear();
-    state.edges.add(edgeRows);
-    state.network.stabilize(150);
-    setPathText();
+    showGraphMessage(null, '');
+
+    try {
+      const nodeRows = [...nodes.values()].map((n) => {
+        const onPath = hlNodes.has(n.id);
+        return {
+          id: n.id,
+          label: n.label === 'Message' ? n.id : n.name,
+          title: `${n.label}: ${n.name}`,
+          color: COLOURS[n.label] || COLOURS.Entity,
+          borderWidth: onPath ? 4 : 1,
+          font: { bold: onPath },
+          shadow: onPath,
+        };
+      });
+      const edgeRows = [...edges.entries()]
+        .filter(([, e]) => nodes.has(e.from) && nodes.has(e.to))
+        .map(([key, e]) => {
+          const onPath = hlEdges.has(key);
+          const closed = !!e.closed;
+          let label = '';
+          if (onPath) label = closed ? `${e.type} · closed` : e.type;
+          else if (closed) label = 'closed';
+          return {
+            id: key,
+            from: e.from,
+            to: e.to,
+            label,
+            dashes: closed ? [6, 4] : false,
+            width: onPath ? 4 : closed ? 1.5 : 1.25,
+            color: onPath && !closed
+              ? { color: '#2f6fed', highlight: '#2f6fed' }
+              : closed
+                ? { color: '#8a929e', highlight: '#8a929e' }
+                : { color: '#1f2937', highlight: '#1f2937' },
+            font: { color: closed ? '#5b6370' : '#2f6fed', size: 12, strokeWidth: 0 },
+          };
+        });
+      state.nodes.clear();
+      state.nodes.add(nodeRows);
+      state.edges.clear();
+      state.edges.add(edgeRows);
+      state.network.stabilize(150);
+    } catch (err) {
+      console.error('graph draw failed', err);
+      showGraphMessage('err', 'The graph could not be drawn. The answer path is listed below as text.');
+    }
+  }
+
+  // Messages sit above the canvas, so vis-network's own DOM is never touched.
+  function showGraphMessage(kind, text) {
+    const box = $('#graph-msg');
+    box.hidden = !kind;
+    box.className = kind ? `notice ${kind}` : 'notice';
+    box.textContent = text;
   }
 
   // Text version of the highlighted path, so colour is never the only signal.
   function setPathText() {
     const list = $('#path-text');
-    if (!state.path || state.path.edges.length === 0) {
-      return setBody(list, el('li', { text: 'No path for this view.' }));
+    const edges = highlightedEdges();
+    if (edges.length === 0) {
+      return setBody(list, el('li', { text: 'No path for this view. Ask a question to light up its path.' }));
     }
-    const names = new Map(state.path.nodes.map((n) => [n.id, n.name]));
-    setBody(list, state.path.edges.map((e) =>
+    const names = new Map();
+    for (const n of state.view.nodes.values()) names.set(n.id, n.name);
+    for (const n of (state.hl && state.hl.nodes) || []) names.set(n.id, n.name);
+    setBody(list, edges.map((e) =>
       el('li', { text: `${names.get(e.from) || e.from} —${e.type}${e.closed ? ' (closed)' : ''}→ ${names.get(e.to) || e.to}` })));
   }
 
-  async function loadGraph(focus) {
-    const res = await api(`/graph?focus=${encodeURIComponent(focus)}&depth=2`);
-    if (!res.ok) {
-      setBody($('#path-text'), el('li', { text: `Graph unavailable: ${res.message}` }));
+  // Fetch the depth-2 views around each focus id and merge them.
+  async function loadFocus(ids) {
+    const focus = [...new Set(ids)].slice(0, MAX_FOCUS);
+    const results = await Promise.all(focus.map((id) =>
+      api(`/graph?focus=${encodeURIComponent(id)}&depth=2`)));
+    const failed = results.find((r) => !r.ok);
+    if (failed) {
+      setBody($('#path-text'), el('li', { text: `Graph unavailable: ${failed.message}` }));
       return;
     }
-    state.focusId = focus;
-    state.base = res.data;
-    drawGraph();
+    const nodes = new Map();
+    const edges = new Map();
+    for (const r of results) {
+      for (const n of r.data.nodes) nodes.set(n.id, n);
+      for (const e of r.data.edges) edges.set(edgeKey(e), e);
+    }
+    state.focusIds = focus;
+    state.view = { nodes, edges };
+    draw();
   }
 
-  function focusFor(path) {
-    const person = path.nodes.find((n) => n.label === 'Person');
-    const service = path.nodes.find((n) => n.label === 'Service');
-    return (person || service || path.nodes[0]).id;
+  async function ensureFullGraph() {
+    if (state.full) return true;
+    const res = await api('/graph/all');
+    if (!res.ok) {
+      setBody($('#path-text'), el('li', { text: `Full graph unavailable: ${res.message}` }));
+      return false;
+    }
+    const nodes = new Map(res.data.nodes.map((n) => [n.id, n]));
+    const edges = new Map(res.data.edges.map((e) => [edgeKey(e), e]));
+    state.full = { nodes, edges };
+    return true;
+  }
+
+  async function toggleFull() {
+    const button = $('#toggle-full');
+    if (!state.showFull && !(await ensureFullGraph())) return;
+    state.showFull = !state.showFull;
+    button.setAttribute('aria-pressed', String(state.showFull));
+    button.textContent = state.showFull ? 'Show focused view' : 'Show full graph';
+    draw();
   }
 
   // ---- ask ----
@@ -309,6 +407,13 @@
     button.textContent = busy ? label : 'Ask';
     $('#answer-card').setAttribute('aria-busy', String(busy));
     $('#baseline-card').setAttribute('aria-busy', String(busy));
+  }
+
+  // Focus on the people, services and tickets the answer path touches.
+  function focusFromPath(path) {
+    return path.nodes
+      .filter((n) => ['Person', 'Service', 'Ticket'].includes(n.label))
+      .map((n) => n.id);
   }
 
   async function ask(question) {
@@ -328,12 +433,12 @@
     renderAnswer(graph);
     renderBaseline(baseline);
 
-    if (graph.ok && graph.data.status === 'ok' && graph.data.path && graph.data.path.nodes.length) {
-      state.path = graph.data.path;
-      await loadGraph(focusFor(state.path));
+    if (graph.ok && graph.data.status === 'ok' && graph.data.path && graph.data.path.edges.length) {
+      state.hl = { mode: 'answer', nodes: graph.data.path.nodes, edges: graph.data.path.edges };
+      await loadFocus(focusFromPath(graph.data.path));
     } else {
-      state.path = null;
-      drawGraph();
+      state.hl = null;
+      draw();
     }
   }
 
@@ -380,8 +485,10 @@
     if (d.status === 'applied') {
       out.className = 'notice ok';
       out.textContent = eventSummary(d) + (d.notes && d.notes.length ? ` (${d.notes.join('; ')})` : '');
-      state.path = null;
-      await loadGraph(state.focusId);
+      state.hl = { mode: 'event', effective: d.ids.effective };
+      const focus = [d.ids.from, d.ids.to, ...d.ids.services, ...d.ids.tickets];
+      state.full = null;
+      await loadFocus(focus);
     } else if (d.status === 'already_applied') {
       out.className = 'notice warn';
       out.textContent = 'Already applied: this exact event is in the graph, so nothing changed.';
@@ -398,12 +505,13 @@
       if (res.status === 401) showTokenField(true);
       return setBody($('#event-result'), notice('err', res.message));
     }
-    state.path = null;
+    state.hl = null;
+    state.full = null;
     setBody($('#answer'), el('p', { class: 'muted', text: 'Demo reset. Ask a question to start again.' }));
     setBody($('#baseline'), el('p', { class: 'muted', text: 'Demo reset.' }));
     $('#event-text').value = DEMO_EVENT;
     setBody($('#event-result'), notice('ok', 'Demo reset: the seed is loaded again.'));
-    await loadGraph('p-tunde');
+    await loadFocus(DEFAULT_FOCUS);
   }
 
   // ---- boot ----
@@ -422,8 +530,7 @@
 
   async function boot() {
     $('#event-text').value = DEMO_EVENT;
-    const examples = $('#examples');
-    setBody(examples, EXAMPLES.map((ex) => el('button', { type: 'button', text: ex.label, onclick: () => ask(ex.q) })));
+    setBody($('#examples'), EXAMPLES.map((ex) => el('button', { type: 'button', text: ex.label, onclick: () => ask(ex.q) })));
 
     const cfg = await api('/config');
     if (cfg.ok && cfg.data.demo_token) {
@@ -432,13 +539,14 @@
       showTokenField(true);
     }
     health();
-    loadGraph('p-tunde');
+    loadFocus(DEFAULT_FOCUS);
   }
 
   $('#ask-form').addEventListener('submit', (e) => { e.preventDefault(); ask($('#q').value); });
   $('#apply').addEventListener('click', () => applyEvent({ text: $('#event-text').value.trim() }));
   $('#apply-demo').addEventListener('click', () => applyEvent({ demo: true }));
   $('#reset').addEventListener('click', reset);
+  $('#toggle-full').addEventListener('click', toggleFull);
   $('#token-save').addEventListener('click', () => {
     const value = $('#token').value.trim();
     if (value) {

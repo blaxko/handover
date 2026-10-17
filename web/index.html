@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Handover · who owns what, now</title>
   <meta name="description" content="Company brain on FalkorDB: graph answers with their path and sources, next to a keyword RAG baseline.">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=9">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js" defer></script>
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v=9" defer></script>
 </head>
 <body>
   <a class="skip" href="#q">Skip to the ask box</a>
@@ -54,6 +54,11 @@
 
       <article class="card graph-wrap" id="graph-card" aria-labelledby="graph-title">
         <h2 id="graph-title">Graph view</h2>
+        <div class="graph-toolbar">
+          <p class="muted" id="graph-caption">Focused view: the answer's subgraph and its direct neighbours.</p>
+          <button type="button" id="toggle-full" aria-pressed="false">Show full graph</button>
+        </div>
+        <p id="graph-msg" class="notice" hidden></p>
         <div id="graph" role="img" aria-label="Graph of people, services, tickets and messages. The answer path is highlighted."></div>
         <ul class="legend" aria-label="Legend">
           <li><span class="swatch"></span>open edge</li>

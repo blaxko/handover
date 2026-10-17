@@ -125,6 +125,11 @@ def graph_view(
     return view
 
 
+@app.get("/graph/all")
+def graph_everything(graph=Depends(get_graph)):
+    return paths.whole_graph(graph)
+
+
 @app.post("/reset", dependencies=[Depends(require_token)])
 def reset(graph=Depends(get_graph)):
     seed.reset(graph)

@@ -115,6 +115,22 @@ MATCH (p:Person {id:$person})-[o:OWNS]->(s:Service) WHERE o.valid_to IS NULL
 RETURN s.id AS service, s.name AS name
 """
 
+# Baseline candidate pool: the same full-text index as B1, with a larger LIMIT.
+# baseline.py re-ranks this pool by keyword overlap and keeps the top 3.
+B1_CANDIDATES = """
+CALL db.idx.fulltext.queryNodes('Message', $q) YIELD node, score
+RETURN node.id AS id, node.text AS text, score
+ORDER BY score DESC LIMIT 25
+"""
+
+# Support: the whole graph, for the "Show full graph" toggle (closed edges included)
+GRAPH_ALL = """
+MATCH (a)-[r]->(b)
+RETURN DISTINCT a.id AS src, coalesce(a.name, a.id) AS src_name, labels(a)[0] AS src_label,
+       b.id AS dst, coalesce(b.name, b.id) AS dst_name, labels(b)[0] AS dst_label,
+       type(r) AS type, r.valid_from AS valid_from, r.valid_to AS valid_to
+"""
+
 # Support: message text for citations
 MESSAGES_BY_ID = """
 MATCH (m:Message) WHERE m.id IN $ids
@@ -240,6 +256,10 @@ def messages_by_id(graph, ids: list[str]) -> list[dict]:
 
 def open_tickets(graph) -> list[dict]:
     return db.read(graph, OPEN_TICKETS)
+
+
+def graph_all(graph) -> list[dict]:
+    return db.read(graph, GRAPH_ALL)
 
 
 def dependency_hops(graph, service: str) -> list[dict]:

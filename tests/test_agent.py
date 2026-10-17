@@ -120,6 +120,15 @@ def test_strip_citations_keeps_only_real_sources():
     assert agent.strip_citations("Done [m01] 【m02】.", []) == "Done."
 
 
+def test_citations_are_normalised_and_deduplicated():
+    # The LLM used full-width brackets and repeated [m00]; the answer keeps one plain [m00].
+    text = "Segun Bello owned ledger in June 2025【m00】. [m00] See also ［m02］."
+    out = agent.strip_citations(text, ["m00", "m02"])
+    assert "【" not in out and "］" not in out
+    assert out.count("[m00]") == 1
+    assert out == "Segun Bello owned ledger in June 2025 [m00]. See also [m02]."
+
+
 def test_missing_citation_is_appended(graph):
     res = agent.answer(graph, "Who owns payments-api?", complete=scripted(
         router_exc=llm.LLMError("down"), answer_text="Tunde Bakare owns it."))

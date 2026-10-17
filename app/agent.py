@@ -111,14 +111,23 @@ def _template_answer(name: str, result: dict) -> str:
     return ""
 
 
-CITATION = re.compile(r"\s*[\[【]((?:m\d+)|(?:evt-[0-9a-f]+))[\]】]")
+CITATION = re.compile(r"\s*[\[【［]\s*((?:m\d+)|(?:evt-[0-9a-f]+))\s*[\]】］]")
 
 
 def strip_citations(text: str, allowed: list[str]) -> str:
-    """Keep only citations whose id is in `allowed` (the response's own sources).
-    With no allowed ids, every citation is removed."""
+    """Normalise citations to [id], keep only ids in `allowed` (the response's own sources),
+    and keep the first mention of each id. With no allowed ids, every citation is removed."""
     keep = set(allowed)
-    out = CITATION.sub(lambda m: m.group(0) if m.group(1) in keep else "", text)
+    seen: set[str] = set()
+
+    def repl(m: re.Match) -> str:
+        cid = m.group(1)
+        if cid not in keep or cid in seen:
+            return ""
+        seen.add(cid)
+        return f" [{cid}]"
+
+    out = CITATION.sub(repl, text)
     out = re.sub(r"\s+([.,;:!?])", r"\1", out)
     return re.sub(r"[ \t]{2,}", " ", out).strip()
 

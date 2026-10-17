@@ -33,6 +33,20 @@ def neighbourhood(graph, focus: str, depth: int) -> dict | None:
     return {"nodes": list(nodes.values()), "edges": edges}
 
 
+def whole_graph(graph) -> dict:
+    """Every node and edge, closed edges included. Used by the "Show full graph" toggle."""
+    nodes: dict[str, dict] = {}
+    edges = []
+    for r in queries.graph_all(graph):
+        for node_id, label, name in ((r["src"], r["src_label"], r["src_name"]),
+                                     (r["dst"], r["dst_label"], r["dst_name"])):
+            nodes.setdefault(node_id, _node(node_id, label, name))
+        edges.append({"from": r["src"], "to": r["dst"], "type": r["type"],
+                      "closed": r["valid_to"] is not None,
+                      "valid_from": r["valid_from"], "valid_to": r["valid_to"]})
+    return {"nodes": list(nodes.values()), "edges": edges}
+
+
 class _Graph:
     def __init__(self, name_ids: dict):
         self.name_ids = name_ids

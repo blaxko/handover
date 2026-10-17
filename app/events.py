@@ -194,6 +194,14 @@ def _apply(graph, plan: dict, text: str, eid: str) -> dict:
         "event_id": eid,
         "event": {"type": plan["type"], "from": frm["name"], "to": to["name"],
                   "services": [s["name"] for s in plan["services"]], "effective": effective},
+        # Ids, so the page can focus on exactly the people, services and tickets involved.
+        "ids": {
+            "from": frm["id"],
+            "to": to["id"],
+            "services": service_ids,
+            "tickets": [m["ticket_id"] for m in moved],
+            "effective": effective,
+        },
         "closed": closed,
         "opened": opened,
         "tickets_moved": [
