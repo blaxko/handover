@@ -184,10 +184,10 @@ def _apply(graph, plan: dict, text: str, eid: str) -> dict:
         queries.apply_departure(graph, {"from": frm["id"], "effective": effective})
 
     # T6: move open tickets from anyone who left to the current owner.
-    today = date.today().isoformat()
+    # $today in T6 is the event's effective date, so ticket dates match the event.
     moved = []
     for svc_id in service_ids:
-        moved += queries.reassign_tickets(graph, {"service": svc_id, "today": today, "event_id": eid})
+        moved += queries.reassign_tickets(graph, {"service": svc_id, "today": effective, "event_id": eid})
 
     return {
         "status": "applied",
@@ -196,7 +196,10 @@ def _apply(graph, plan: dict, text: str, eid: str) -> dict:
                   "services": [s["name"] for s in plan["services"]], "effective": effective},
         "closed": closed,
         "opened": opened,
-        "tickets_moved": [{"ticket": m["ticket"], "from": m["from"], "to": m["to"]} for m in moved],
+        "tickets_moved": [
+            {"ticket_id": m["ticket_id"], "ticket": m["ticket"], "from": m["from"], "to": m["to"]}
+            for m in moved
+        ],
         "rejected": plan["skipped"],
         "notes": plan["notes"],
     }

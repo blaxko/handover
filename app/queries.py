@@ -82,7 +82,13 @@ MATCH (t)-[a:ASSIGNED_TO]->(old:Person {status:'left'}) WHERE a.valid_to IS NULL
 MATCH (new:Person)-[o:OWNS]->(s) WHERE o.valid_to IS NULL
 SET a.valid_to = $today
 CREATE (t)-[:ASSIGNED_TO {valid_from:$today, reason:'owner_left', source:$event_id}]->(new)
-RETURN t.name AS ticket, old.name AS from, new.name AS to
+RETURN t.id AS ticket_id, t.name AS ticket, old.name AS from, new.name AS to
+"""
+
+# T7 — ticket_assignee(ticket) (read-only)
+T7_TICKET_ASSIGNEE = """
+MATCH (t:Ticket {id:$ticket})-[a:ASSIGNED_TO]->(p:Person) WHERE a.valid_to IS NULL
+RETURN t.id AS ticket_id, t.name AS ticket, p.id AS person_id, p.name AS person, a.valid_from AS since, a.source AS source
 """
 
 # B1 — baseline retrieval (keyword RAG)
@@ -101,6 +107,18 @@ MATCH (e:Message {id:$event_id}) RETURN e.id AS id
 OPEN_SERVICES_OF = """
 MATCH (p:Person {id:$person})-[o:OWNS]->(s:Service) WHERE o.valid_to IS NULL
 RETURN s.id AS service, s.name AS name
+"""
+
+# Support: message text for citations
+MESSAGES_BY_ID = """
+MATCH (m:Message) WHERE m.id IN $ids
+RETURN m.id AS id, m.text AS text, m.ts AS ts, m.channel AS channel
+ORDER BY m.ts
+"""
+
+# Support: open tickets, to map ticket names in T4 results to ids for the path
+OPEN_TICKETS = """
+MATCH (t:Ticket {status:'open'}) RETURN t.id AS id, t.name AS name
 """
 
 # Invariant check (test and load --check): open OWNS edges per service
@@ -171,3 +189,17 @@ def apply_departure(graph, params: dict) -> list[dict]:
 
 def reassign_tickets(graph, params: dict) -> list[dict]:
     return db.write(graph, T6_REASSIGN_TICKETS, params)
+
+
+# ---- reads for the agent ----
+
+def ticket_assignee(graph, ticket: str) -> list[dict]:
+    return db.read(graph, T7_TICKET_ASSIGNEE, {"ticket": ticket})
+
+
+def messages_by_id(graph, ids: list[str]) -> list[dict]:
+    return db.read(graph, MESSAGES_BY_ID, {"ids": ids})
+
+
+def open_tickets(graph) -> list[dict]:
+    return db.read(graph, OPEN_TICKETS)

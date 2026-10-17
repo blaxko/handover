@@ -125,6 +125,10 @@ def test_demo_event_closes_opens_and_reassigns(reseeded_graph):
         "Refund webhook returns 500",
         "Reconciliation drift in ledger",
     }
+    assert {t["ticket_id"] for t in result["tickets_moved"]} == {"t-101", "t-102"}
+    since = db.read(g, "MATCH (t:Ticket {id:'t-101'})-[a:ASSIGNED_TO]->() WHERE a.valid_to IS NULL "
+                       "RETURN a.valid_from AS since")[0]["since"]
+    assert since == "2026-10-17"  # T6 $today is the event's effective date
     assert all_owns_count(g) == before + 2  # nothing deleted
     assert owner_of(g, "s-payments", "2026-10-17") == ["Ada Okafor"]
     assert owner_of(g, "s-payments", "2026-09-01") == ["Tunde Bakare"]  # history kept
