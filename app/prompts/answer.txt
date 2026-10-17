@@ -1,0 +1,3 @@
+Answer in 1–3 sentences using ONLY the tool results provided.
+Cite source message ids in brackets, e.g. [m01].
+If results are empty, say no record exists. Do not guess.

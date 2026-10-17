@@ -1,0 +1,51 @@
+# Run in order. "event" step applies the demo change event.
+- id: 1
+  question: "Who owns payments-api?"
+  expect_tool: who_owns
+  expect_contains: ["Tunde Bakare"]
+  expect_source: m01
+- id: 2
+  question: "Who owns ledger?"
+  expect_tool: who_owns
+  expect_contains: ["Tunde"]
+  expect_source: m02
+- id: 3
+  question: "Who owned ledger in 2025-06?"
+  expect_tool: who_owns
+  expect_contains: ["Segun Bello"]
+  expect_source: m00
+- id: 4
+  question: "What breaks if TB leaves?"
+  expect_tool: blast_radius
+  expect_contains: ["payments-api", "ledger", "mobile-app", "notifications", "Refund webhook returns 500", "Reconciliation drift in ledger"]
+- id: 5
+  question: "Who knows payments-api besides the owner?"
+  expect_tool: who_knows
+  expect_first: "Ada Okafor"
+- id: 6
+  event: "Tunde Bakare's last day was Friday. Ada Okafor takes over payments-api and ledger, effective 2026-10-17."
+  expect_closed: 2
+  expect_opened: 2
+  expect_tickets_moved: ["t-101", "t-102"]
+- id: 7
+  question: "Who owns payments-api?"
+  expect_tool: who_owns
+  expect_contains: ["Ada Okafor"]
+  expect_source_is_event: true
+- id: 8
+  question: "Who owned payments-api on 2026-09-01?"
+  expect_tool: who_owns
+  expect_contains: ["Tunde Bakare"]
+- id: 9
+  question: "What changed since 2026-10-15?"
+  expect_tool: what_changed
+  expect_contains: ["Tunde Bakare", "Ada Okafor", "OWNS", "ASSIGNED_TO"]
+- id: 10
+  question: "Who is t-101 assigned to?"
+  expect_contains: ["Ada Okafor"]
+- id: 11
+  question: "What does Ada work on?"
+  expect_clarify: ["Ada Okafor", "Ada Nwankwo"]
+- id: 12
+  question: "Who owns billing?"
+  expect_unknown: true
