@@ -130,6 +130,15 @@ MATCH (t:Ticket {id:$ticket})-[a:ASSIGNED_TO]->(p:Person) WHERE a.valid_to IS NU
 RETURN t.id AS ticket_id, t.name AS ticket, p.id AS person_id, p.name AS person, a.valid_from AS since, a.source AS source
 ```
 
+**Support query — dependency paths for `blast_radius`** (`app/queries.py`, `DEPENDENCY_HOPS`; run once per owned service)
+```cypher
+MATCH p=(up:Service)-[:DEPENDS_ON*1..3]->(s:Service {id:$service})
+UNWIND relationships(p) AS r
+RETURN DISTINCT startNode(r).id AS src, startNode(r).name AS src_name,
+       endNode(r).id AS dst, endNode(r).name AS dst_name, type(r) AS type
+```
+Each row is one stored `DEPENDS_ON` edge, so the graph view draws real hops, not shortcuts.
+
 **B1 — baseline retrieval (keyword RAG)**
 ```cypher
 CALL db.idx.fulltext.queryNodes('Message', $q) YIELD node, score

@@ -1,26 +1,35 @@
-import importlib.util
-from pathlib import Path
+import os
 
 import pytest
 
+from app import seed  # importing app.config loads .env via db.connect
 from app.db import connect
 
-ROOT = Path(__file__).resolve().parent.parent
+
+def pytest_addoption(parser):
+    parser.addoption("--base-url", default=None,
+                     help="Run the golden tests against a live server instead of TestClient.")
+    parser.addoption("--write-baseline-doc", action="store_true", default=False,
+                     help="Write docs/baseline_results.md from the golden run (calls /baseline too).")
 
 
-def _load_loader():
-    # db/ is not a package; load load.py by path to reuse its reset().
-    spec = importlib.util.spec_from_file_location("handover_loader", ROOT / "db" / "load.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+@pytest.fixture(scope="session", autouse=True)
+def seeded_session():
+    """Every run starts and ends with the seed loaded, so no test sees leftovers from another."""
+    seed.reset(connect())
+    yield
+    seed.reset(connect())
 
 
 @pytest.fixture
 def reseeded_graph():
     """Drop and re-seed the graph before the test; re-seed again after it."""
-    loader = _load_loader()
     graph = connect()
-    loader.reset(graph)
+    seed.reset(graph)
     yield graph
-    loader.reset(connect())
+    seed.reset(connect())
+
+
+@pytest.fixture
+def demo_token():
+    return os.environ.get("DEMO_TOKEN", "")

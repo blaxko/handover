@@ -116,6 +116,33 @@ RETURN m.id AS id, m.text AS text, m.ts AS ts, m.channel AS channel
 ORDER BY m.ts
 """
 
+# Support: the real dependency hops into an owned service, for drawing the blast radius.
+# Each hop is one stored DEPENDS_ON edge, so the path shows actual edges, not shortcuts.
+DEPENDENCY_HOPS = """
+MATCH p=(up:Service)-[:DEPENDS_ON*1..3]->(s:Service {id:$service})
+UNWIND relationships(p) AS r
+RETURN DISTINCT startNode(r).id AS src, startNode(r).name AS src_name,
+       endNode(r).id AS dst, endNode(r).name AS dst_name, type(r) AS type
+"""
+
+# Support: one-node lookup, so /graph can return 404 for an unknown focus
+FOCUS_NODE = """
+MATCH (f {id:$focus}) RETURN f.id AS id, labels(f)[0] AS label, coalesce(f.name, f.id) AS name
+"""
+
+# Support: neighbourhood of a focus node, both directions, up to $depth hops.
+# Closed edges are returned too (valid_to set); the API marks them closed: true.
+GRAPH_NEIGHBOURHOOD = """
+MATCH p=(f {id:$focus})-[*1..3]-(n)
+WHERE length(p) <= $depth
+UNWIND relationships(p) AS r
+RETURN DISTINCT startNode(r).id AS src, coalesce(startNode(r).name, startNode(r).id) AS src_name,
+       labels(startNode(r))[0] AS src_label,
+       endNode(r).id AS dst, coalesce(endNode(r).name, endNode(r).id) AS dst_name,
+       labels(endNode(r))[0] AS dst_label,
+       type(r) AS type, r.valid_from AS valid_from, r.valid_to AS valid_to
+"""
+
 # Support: open tickets, to map ticket names in T4 results to ids for the path
 OPEN_TICKETS = """
 MATCH (t:Ticket {status:'open'}) RETURN t.id AS id, t.name AS name
@@ -203,3 +230,15 @@ def messages_by_id(graph, ids: list[str]) -> list[dict]:
 
 def open_tickets(graph) -> list[dict]:
     return db.read(graph, OPEN_TICKETS)
+
+
+def dependency_hops(graph, service: str) -> list[dict]:
+    return db.read(graph, DEPENDENCY_HOPS, {"service": service})
+
+
+def focus_node(graph, focus: str) -> list[dict]:
+    return db.read(graph, FOCUS_NODE, {"focus": focus})
+
+
+def neighbourhood(graph, focus: str, depth: int) -> list[dict]:
+    return db.read(graph, GRAPH_NEIGHBOURHOOD, {"focus": focus, "depth": depth})

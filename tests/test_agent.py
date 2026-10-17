@@ -142,6 +142,13 @@ def test_golden_4_blast_radius(graph):
     assert {"p-tunde", "s-payments", "s-ledger", "s-mobile", "s-notify", "t-101", "t-102"} <= node_ids
 
 
+def test_blast_path_draws_only_real_dependency_hops(graph):
+    # Stored DEPENDS_ON edges into Tunde's services. No shortcut edge mobile-app -> ledger.
+    res = _keyword_only(graph, "What breaks if TB leaves?")
+    deps = {(e["from"], e["to"]) for e in res["path"]["edges"] if e["type"] == "DEPENDS_ON"}
+    assert deps == {("s-mobile", "s-payments"), ("s-payments", "s-ledger"), ("s-notify", "s-payments")}
+
+
 def test_golden_5_who_knows_drops_the_owner(graph):
     res = _keyword_only(graph, "Who knows payments-api besides the owner?")
     assert res["tool"] == "who_knows"

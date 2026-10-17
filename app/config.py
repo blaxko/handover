@@ -35,6 +35,11 @@ def get_llm_settings() -> LLMSettings:
     )
 
 
+def get_app_origin() -> str:
+    """The one origin allowed by CORS. Defaults to the local app."""
+    return os.environ.get("APP_ORIGIN") or "http://localhost:8000"
+
+
 def get_settings() -> Settings:
     host = os.environ.get("FALKORDB_HOST", "")
     missing = [k for k in ("FALKORDB_HOST", "FALKORDB_PORT") if not os.environ.get(k)]

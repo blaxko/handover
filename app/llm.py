@@ -31,11 +31,16 @@ def _get_client() -> OpenAI:
 
 
 def complete(messages: list[dict], tools: list[dict] | None = None):
-    kwargs = {"model": get_llm_settings().model, "messages": messages, "temperature": 0}
+    try:
+        model = get_llm_settings().model
+        client = _get_client()
+    except RuntimeError as e:  # missing LLM_* config: report as an LLM error, not a crash
+        raise LLMError(str(e)) from e
+    kwargs = {"model": model, "messages": messages, "temperature": 0}
     if tools:
         kwargs["tools"] = tools
     try:
-        resp = _get_client().chat.completions.create(**kwargs)
+        resp = client.chat.completions.create(**kwargs)
     except RateLimitError as e:
         raise LLMRateLimited("The LLM provider is rate limited (HTTP 429). Retry in a few seconds.") from e
     except APITimeoutError as e:

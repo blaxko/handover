@@ -198,8 +198,16 @@ def blast_radius(graph, args):
     if early:
         return early
     rows = queries.blast_radius(graph, person["id"])
+    # Real DEPENDS_ON hops into each owned service, for drawing (no shortcut edges).
+    hops, seen = [], set()
+    for owned in queries.open_services_of(graph, person["id"]):
+        for hop in queries.dependency_hops(graph, owned["service"]):
+            key = (hop["src"], hop["dst"], hop["type"])
+            if key not in seen:
+                seen.add(key)
+                hops.append(hop)
     return _ok("blast_radius", args, rows, bound={"person": person["id"]},
-               extra={"person": person["name"], "person_id": person["id"]})
+               extra={"person": person["name"], "person_id": person["id"], "hops": hops})
 
 
 def ticket_assignee(graph, args):

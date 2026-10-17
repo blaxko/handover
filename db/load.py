@@ -10,45 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import db, queries  # noqa: E402
+from app import db, queries, seed  # noqa: E402
 from app.config import get_settings  # noqa: E402
-
-
-def split_statements(text: str) -> list[str]:
-    """Drop full-line // comments, split on ';' outside string literals."""
-    kept = [line for line in text.splitlines() if not line.lstrip().startswith("//")]
-    pieces, buf, quote = [], [], None
-    for ch in "\n".join(kept):
-        if quote:
-            if ch == quote:
-                quote = None
-        elif ch in ("'", '"'):
-            quote = ch
-        elif ch == ";":
-            pieces.append("".join(buf))
-            buf = []
-            continue
-        buf.append(ch)
-    pieces.append("".join(buf))
-    return [p.strip() for p in pieces if p.strip()]
-
-
-def run_file(graph, path: Path) -> int:
-    statements = split_statements(path.read_text(encoding="utf-8"))
-    for stmt in statements:
-        db.write(graph, stmt)
-    return len(statements)
-
-
-def reset(graph) -> None:
-    try:
-        graph.delete()
-    except Exception:
-        # Graph does not exist yet on a fresh instance.
-        pass
-    n_seed = run_file(graph, ROOT / "db" / "seed.cypher")
-    n_idx = run_file(graph, ROOT / "db" / "indexes.cypher")
-    print(f"loaded {n_seed} seed statements, {n_idx} index statements")
 
 
 def check(graph) -> None:
@@ -74,7 +37,8 @@ def main() -> int:
 
     graph = db.connect(get_settings())
     if args.reset:
-        reset(graph)
+        n_seed, n_idx = seed.reset(graph)
+        print(f"loaded {n_seed} seed statements, {n_idx} index statements")
     if args.check:
         check(graph)
     return 0

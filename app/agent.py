@@ -138,7 +138,8 @@ def _phrase(question: str, name: str, result: dict, complete):
     return _cite(text, result["sources"]), "llm"
 
 
-def answer(graph, question: str, complete=llm.complete) -> dict:
+def answer(graph, question: str, complete=None, default_at: str | None = None) -> dict:
+    complete = complete or llm.complete
     note = None
     route, router = None, None
     try:
@@ -154,6 +155,8 @@ def answer(graph, question: str, complete=llm.complete) -> dict:
                 "message": NO_TOOL_MESSAGE, "examples": EXAMPLES}
 
     name, args = route
+    if default_at and name == "who_owns" and "at" not in args:
+        args = {**args, "at": default_at}  # POST /ask body "at" applies when the question has no date
     result = tools.run(graph, name, args)
     base = {"router": router, "llm_note": note, "tool": name, "params": args}
     if result["status"] != "ok":
