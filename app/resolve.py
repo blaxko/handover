@@ -32,7 +32,8 @@ def resolve(graph, text: str) -> dict:
     if not q:
         return {"status": "unknown", "suggestions": []}
 
-    matches = queries.resolve_entity(graph, q)
+    # An exact id (p-ada, s-payments) wins; otherwise match names and aliases.
+    matches = queries.entity_by_id(graph, q) or queries.resolve_entity(graph, q)
     if not matches:
         return {"status": "unknown", "suggestions": _suggestions(q, queries.all_entities(graph))}
 

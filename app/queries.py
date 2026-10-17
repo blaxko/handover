@@ -20,6 +20,12 @@ MATCH (n) WHERE (n:Person OR n:Service)
 RETURN n.id AS id, n.name AS name, labels(n)[0] AS kind, n.aliases AS aliases
 """
 
+# Exact id lookup, so a clarify chip can re-ask with the chosen id (e.g. "p-ada")
+ENTITY_BY_ID = """
+MATCH (n) WHERE (n:Person OR n:Service) AND n.id = $q
+RETURN n.id AS id, n.name AS name, labels(n)[0] AS kind, n.status AS status
+"""
+
 # T1 — who_owns(service, at)
 T1_WHO_OWNS = """
 MATCH (p:Person)-[o:OWNS]->(s:Service {id:$service})
@@ -159,6 +165,10 @@ ORDER BY service
 
 def resolve_entity(graph, q: str) -> list[dict]:
     return db.read(graph, T0_RESOLVE_ENTITY, {"q": q})
+
+
+def entity_by_id(graph, entity_id: str) -> list[dict]:
+    return db.read(graph, ENTITY_BY_ID, {"q": entity_id})
 
 
 def all_entities(graph) -> list[dict]:

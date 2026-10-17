@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from app import db, llm, queries
+from app.agent import strip_citations
 
 STOPWORDS = {
     "a", "an", "and", "at", "by", "did", "do", "does", "for", "if", "in", "is", "of",
@@ -43,6 +44,7 @@ def answer(graph, question: str, complete_text=None) -> dict:
     )
     try:
         text = complete_text(PROMPT, user).strip()
+        text = strip_citations(text, [s["id"] for s in found])
         return {"answer": text, "snippets": found, "error": None}
     except llm.LLMError as e:
         return {"answer": None, "snippets": found, "error": str(e)}

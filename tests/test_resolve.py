@@ -27,6 +27,13 @@ def test_ada_is_ambiguous_with_two_candidates(graph):
     assert {c["id"] for c in result["candidates"]} == {"p-ada", "p-adan"}
 
 
+def test_exact_id_resolves_to_one_person(graph):
+    # Clarify chips re-ask with the chosen id, so "p-adan" must pick Ada Nwankwo alone.
+    result = resolve.resolve(graph, "p-adan")
+    assert result["status"] == "ok"
+    assert result["id"] == "p-adan"
+
+
 def test_service_alias_resolves(graph):
     result = resolve.resolve(graph, "payments")
     assert result["status"] == "ok"

@@ -103,6 +103,23 @@ def test_answer_phrasing_falls_back_to_template_with_citation(graph):
     assert "[m01]" in res["answer"]
 
 
+def test_golden_4_never_cites_m01_without_a_source(graph):
+    # Blast radius has no message sources, so an [m01] from the LLM must be removed.
+    res = agent.answer(graph, "What breaks if TB leaves?", complete=scripted(
+        router_exc=llm.LLMError("off"), answer_text="The ledger breaks, taking its dependents with it [m01]."))
+    assert res["sources"] == []
+    assert "[m01]" not in res["answer"]
+    assert "ledger" in res["answer"]
+
+
+def test_strip_citations_keeps_only_real_sources():
+    text = "Tunde owns it [m01]. Ada took over [evt-cd7d27286b2f6adc] and [m99]."
+    out = agent.strip_citations(text, ["m01", "evt-cd7d27286b2f6adc"])
+    assert "[m01]" in out and "[evt-cd7d27286b2f6adc]" in out
+    assert "[m99]" not in out
+    assert agent.strip_citations("Done [m01] 【m02】.", []) == "Done."
+
+
 def test_missing_citation_is_appended(graph):
     res = agent.answer(graph, "Who owns payments-api?", complete=scripted(
         router_exc=llm.LLMError("down"), answer_text="Tunde Bakare owns it."))

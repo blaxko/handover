@@ -4,24 +4,30 @@ Error shape everywhere: {"error": {"code": str, "message": str, "details"?: any}
 """
 import hmac
 import os
+from pathlib import Path
 
 import redis
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import agent, baseline, config, db, events, llm, paths, seed
 from app.models import AskRequest, BaselineRequest, EventRequest
 
-app = FastAPI(title="Handover", version="0.6.0")
+WEB = Path(__file__).resolve().parent.parent / "web"
+LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost"}
+
+app = FastAPI(title="Handover", version="0.7.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[config.get_app_origin()],
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "X-Demo-Token"],
 )
+app.mount("/static", StaticFiles(directory=WEB), name="static")
 
 UNREACHABLE = "FalkorDB is unreachable. Check FALKORDB_* in .env and that the instance is running."
 _graph = None
@@ -66,6 +72,19 @@ def require_token(x_demo_token: str | None = Header(default=None)):
         raise StarletteHTTPException(503, "DEMO_TOKEN is not set in .env; demo endpoints are disabled.")
     if not x_demo_token or not hmac.compare_digest(x_demo_token, expected):
         raise StarletteHTTPException(401, "Missing or wrong X-Demo-Token header.")
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse(WEB / "index.html")
+
+
+@app.get("/config")
+def page_config(request: Request):
+    """The demo token goes to the page only when the server is reached from this machine."""
+    local = request.client is not None and request.client.host in LOCAL_HOSTS
+    token = os.environ.get("DEMO_TOKEN") if local else None
+    return {"local": local, "demo_token": token or None}
 
 
 @app.post("/ask")

@@ -12,6 +12,28 @@ def client():
         yield c
 
 
+def test_index_and_static_files_load(client):
+    page = client.get("/")
+    assert page.status_code == 200
+    assert "<title>" in page.text
+    for path in ("/static/app.js", "/static/style.css"):
+        assert client.get(path).status_code == 200, path
+
+
+def test_config_hides_token_from_non_local_clients(client, monkeypatch):
+    # TestClient connects as "testclient", which is not this machine.
+    monkeypatch.setenv("DEMO_TOKEN", "secret-for-test")
+    data = client.get("/config").json()
+    assert data == {"local": False, "demo_token": None}
+
+
+def test_config_gives_token_to_local_clients(monkeypatch):
+    monkeypatch.setenv("DEMO_TOKEN", "secret-for-test")
+    with TestClient(app, client=("127.0.0.1", 50000)) as local:
+        data = local.get("/config").json()
+    assert data == {"local": True, "demo_token": "secret-for-test"}
+
+
 def test_event_endpoint_needs_token(client):
     resp = client.post("/events", json={"demo": True})
     assert resp.status_code == 401
@@ -86,11 +108,12 @@ def test_falkordb_unreachable_gives_503(monkeypatch):
 
 
 def test_baseline_shape_and_rank(client, monkeypatch):
-    monkeypatch.setattr(llm, "complete_text", lambda system, user: "Tunde Bakare [m01].")
+    # The LLM cites m99, which is not a snippet here, so the guard must remove it.
+    monkeypatch.setattr(llm, "complete_text", lambda system, user: "Tunde Bakare [m99].")
     resp = client.post("/baseline", json={"question": "Who owns payments-api?"})
     assert resp.status_code == 200
     data = resp.json()
-    assert data["answer"] == "Tunde Bakare [m01]."
+    assert data["answer"] == "Tunde Bakare."
     assert data["snippets"]
     assert [s["rank"] for s in data["snippets"]] == list(range(1, len(data["snippets"]) + 1))
     assert all("score" in s for s in data["snippets"])

@@ -111,6 +111,18 @@ def _template_answer(name: str, result: dict) -> str:
     return ""
 
 
+CITATION = re.compile(r"\s*[\[【]((?:m\d+)|(?:evt-[0-9a-f]+))[\]】]")
+
+
+def strip_citations(text: str, allowed: list[str]) -> str:
+    """Keep only citations whose id is in `allowed` (the response's own sources).
+    With no allowed ids, every citation is removed."""
+    keep = set(allowed)
+    out = CITATION.sub(lambda m: m.group(0) if m.group(1) in keep else "", text)
+    out = re.sub(r"\s+([.,;:!?])", r"\1", out)
+    return re.sub(r"[ \t]{2,}", " ", out).strip()
+
+
 def _cite(text: str, sources: list[str]) -> str:
     if sources and not any(f"[{s}]" in text for s in sources):
         text = f"{text} " + " ".join(f"[{s}]" for s in sources)
@@ -164,6 +176,7 @@ def answer(graph, question: str, complete=None, default_at: str | None = None) -
                 "clarify": result.get("clarify"), "suggestions": result.get("suggestions")}
 
     text, phrased_by = _phrase(question, name, result, complete)
+    text = strip_citations(text, result["sources"])  # no citation survives unless it is a real source
     sources = queries.messages_by_id(graph, result["sources"]) if result["sources"] else []
     return {
         **base,
