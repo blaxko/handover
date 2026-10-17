@@ -14,6 +14,12 @@ MATCH (n) WHERE (n:Person OR n:Service)
 RETURN n.id AS id, n.name AS name, labels(n)[0] AS kind, n.status AS status
 """
 
+# Suggestions for unknown names (resolve.py ranks them in Python)
+ALL_ENTITIES = """
+MATCH (n) WHERE (n:Person OR n:Service)
+RETURN n.id AS id, n.name AS name, labels(n)[0] AS kind, n.aliases AS aliases
+"""
+
 # T1 — who_owns(service, at)
 T1_WHO_OWNS = """
 MATCH (p:Person)-[o:OWNS]->(s:Service {id:$service})
@@ -97,6 +103,10 @@ ORDER BY service
 
 def resolve_entity(graph, q: str) -> list[dict]:
     return db.read(graph, T0_RESOLVE_ENTITY, {"q": q})
+
+
+def all_entities(graph) -> list[dict]:
+    return db.read(graph, ALL_ENTITIES)
 
 
 def who_owns(graph, service: str, at: str | None = None) -> list[dict]:
