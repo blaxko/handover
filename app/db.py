@@ -33,6 +33,11 @@ def _get_client(s: Settings):
         return _client
 
 
+def client(settings: Settings | None = None):
+    """The shared client, for the few calls that need the server rather than one graph."""
+    return _get_client(settings or get_settings())
+
+
 def reset_client() -> None:
     global _client
     with _lock:

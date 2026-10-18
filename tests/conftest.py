@@ -1,4 +1,6 @@
 import os
+# The test session keeps its sandboxes; the startup purge is for real deployments.
+os.environ.setdefault("SANDBOX_PURGE_ON_START", "false")
 
 import pytest
 

@@ -462,7 +462,7 @@
   function eventSummary(d) {
     const closed = d.closed.length;
     const opened = d.opened.length;
-    const moved = d.tickets_moved.map((t) => t.ticket_id).join(', ') || 'none';
+    const moved = [...new Set(d.tickets_moved.map((t) => t.ticket_id))].join(', ') || 'none';
     const to = [...new Set(d.tickets_moved.map((t) => t.to))].join(', ');
     const tail = to ? ` → ${to}` : '';
     return `closed ${closed} · opened ${opened} · moved ${moved}${tail}`;

@@ -88,7 +88,7 @@ MATCH (t)-[a:ASSIGNED_TO]->(old:Person {status:'left'}) WHERE a.valid_to IS NULL
 MATCH (new:Person)-[o:OWNS]->(s) WHERE o.valid_to IS NULL
 SET a.valid_to = $today
 CREATE (t)-[:ASSIGNED_TO {valid_from:$today, reason:'owner_left', source:$event_id}]->(new)
-RETURN t.id AS ticket_id, t.name AS ticket, old.name AS from, new.name AS to
+RETURN DISTINCT t.id AS ticket_id, t.name AS ticket, old.name AS from, new.name AS to
 """
 
 # T7 — ticket_assignee(ticket) (read-only)

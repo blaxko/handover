@@ -93,6 +93,26 @@ def extract_event(text: str, complete_text=llm.complete_text) -> ChangeEvent:
 
 # ---- planning (no writes) ----
 
+def _unique(values) -> list:
+    """Keep the first of each value, in order."""
+    seen, out = set(), []
+    for v in values:
+        if v not in seen:
+            seen.add(v)
+            out.append(v)
+    return out
+
+
+def _unique_tickets(tickets: list[dict]) -> list[dict]:
+    """Keep the first entry for each ticket id."""
+    seen, out = set(), []
+    for t in tickets:
+        if t["ticket_id"] not in seen:
+            seen.add(t["ticket_id"])
+            out.append(t)
+    return out
+
+
 def _reject(reasons: list[str]) -> dict:
     return {"status": "rejected", "reasons": reasons}
 
@@ -177,8 +197,9 @@ def _apply(graph, plan: dict, text: str, eid: str) -> dict:
         "to": to["id"],
         "services": service_ids,
     })
-    closed = [{"service": r["service"], "from": frm["name"]} for r in rows]
-    opened = [{"service": r["service"], "to": to["name"]} for r in rows]
+    # One entry per service and per ticket: a result never lists the same id twice.
+    closed = [{"service": s, "from": frm["name"]} for s in _unique(r["service"] for r in rows)]
+    opened = [{"service": s, "to": to["name"]} for s in _unique(r["service"] for r in rows)]
 
     if plan["type"] == "departure":
         queries.apply_departure(graph, {"from": frm["id"], "effective": effective})
@@ -204,10 +225,10 @@ def _apply(graph, plan: dict, text: str, eid: str) -> dict:
         },
         "closed": closed,
         "opened": opened,
-        "tickets_moved": [
+        "tickets_moved": _unique_tickets([
             {"ticket_id": m["ticket_id"], "ticket": m["ticket"], "from": m["from"], "to": m["to"]}
             for m in moved
-        ],
+        ]),
         "rejected": plan["skipped"],
         "notes": plan["notes"],
     }

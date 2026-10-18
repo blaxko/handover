@@ -4,7 +4,9 @@ Error shape everywhere: {"error": {"code": str, "message": str, "details"?: any}
 Every graph call runs in the caller's own sandbox graph (see app/sandbox.py).
 """
 import html
+import os
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import redis
@@ -23,7 +25,18 @@ WEB = ROOT / "web"
 SESSION_COOKIE = "hv_sid"
 SESSION_MAX_AGE = 7 * 24 * 3600
 
-app = FastAPI(title="Handover", version="0.8.0")
+@asynccontextmanager
+async def lifespan(_app):
+    """Startup: clear out sandboxes from before this run, which may be corrupted. SANDBOX_PURGE_ON_START=false keeps them."""
+    if os.environ.get("SANDBOX_PURGE_ON_START", "true").lower() != "false":
+        try:
+            print(f"startup: purged {sandbox.purge_all()} sandbox graphs", file=sys.stderr)
+        except Exception as e:  # the app still starts; the database may be back later
+            print(f"startup: could not purge sandboxes: {type(e).__name__}: {e}", file=sys.stderr)
+    yield
+
+
+app = FastAPI(title="Handover", version="0.8.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[config.get_app_origin()],
@@ -66,14 +79,19 @@ def _is_https(request: Request) -> bool:
     return request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
 
 
-def session_graph(request: Request, response: Response):
-    """The caller's own graph. A new anonymous session gets a cookie and a seeded sandbox."""
+def session_id(request: Request, response: Response) -> str:
+    """The caller's session id. A new anonymous session gets a cookie."""
     sid = request.cookies.get(SESSION_COOKIE)
     if not sandbox.valid_sid(sid):
         sid = sandbox.new_sid()
         response.set_cookie(SESSION_COOKIE, sid, max_age=SESSION_MAX_AGE, httponly=True,
                             samesite="lax", secure=_is_https(request), path="/")
-    return sandbox.ensure(sid)
+    return sid
+
+
+def session_graph(request: Request, response: Response):
+    """The caller's own graph, seeded once if the session is new."""
+    return sandbox.ensure(session_id(request, response))
 
 
 @app.get("/", include_in_schema=False)
@@ -160,19 +178,24 @@ def ask_baseline(body: BaselineRequest, request: Request, response: Response):
 
 @app.post("/events")
 def post_event(body: EventRequest, request: Request, response: Response):
-    graph = session_graph(request, response)
-    if body.demo:
-        return events.apply_demo_event(graph)
-    if not body.text:
+    if not body.demo and not body.text:
         raise StarletteHTTPException(422, "Send 'text' or 'demo': true.")
-    try:
-        return events.apply_event_text(graph, body.text)
-    except events.EventError as e:
-        return _error(422, "EVENT_INVALID", str(e), details={"raw": e.raw})
-    except llm.LLMRateLimited as e:
-        return _error(429, "LLM_RATE_LIMITED", str(e))
-    except llm.LLMError as e:
-        return _error(503, "LLM_UNAVAILABLE", str(e))
+    sid = session_id(request, response)
+    # The whole handover runs under the session lock, so it cannot interleave with a reset or a seed.
+    with sandbox.locked(sid):
+        graph = sandbox.ensure(sid)
+        try:
+            result = events.apply_demo_event(graph) if body.demo else events.apply_event_text(graph, body.text)
+        except events.EventError as e:
+            return _error(422, "EVENT_INVALID", str(e), details={"raw": e.raw})
+        except llm.LLMRateLimited as e:
+            return _error(429, "LLM_RATE_LIMITED", str(e))
+        except llm.LLMError as e:
+            return _error(503, "LLM_UNAVAILABLE", str(e))
+        if result.get("status") == "applied" and not sandbox.verify(sid, graph):
+            return {"status": "rejected", "event_id": result.get("event_id"),
+                    "reasons": ["Your workspace failed an integrity check and was rebuilt. Hand it over again."]}
+        return result
 
 
 @app.get("/graph")
@@ -226,7 +249,7 @@ def overview(request: Request, response: Response):
 
 @app.post("/reset")
 def reset(request: Request, response: Response):
-    seed.reset(session_graph(request, response))
+    sandbox.reset(session_id(request, response))
     return {"ok": True}
 
 

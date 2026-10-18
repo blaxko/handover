@@ -1,5 +1,7 @@
-"""Load the Tidewell seed and indexes into FalkorDB. Shared by db/load.py, tests and POST /reset."""
+﻿"""Load the Tidewell seed and indexes into FalkorDB. Shared by db/load.py, tests and the sandboxes."""
 from pathlib import Path
+
+import redis
 
 from app import db
 
@@ -32,13 +34,18 @@ def run_file(graph, path: Path) -> int:
     return len(statements)
 
 
-def reset(graph) -> tuple[int, int]:
-    """Drop the graph, then run seed.cypher and indexes.cypher. Returns statement counts."""
+def drop(graph) -> None:
+    """Delete the graph if it exists. A missing graph is fine. A dropped connection is not:
+    if the delete failed for another reason, seeding on top of the old data would duplicate it."""
     try:
         graph.delete()
-    except Exception:
-        # Graph does not exist yet on a fresh instance.
-        pass
+    except redis.exceptions.ResponseError:
+        pass  # the graph does not exist yet
+
+
+def reset(graph) -> tuple[int, int]:
+    """Drop the graph, then run seed.cypher and indexes.cypher. Returns statement counts."""
+    drop(graph)
     n_seed = run_file(graph, ROOT / "db" / "seed.cypher")
     n_idx = run_file(graph, ROOT / "db" / "indexes.cypher")
     return n_seed, n_idx
