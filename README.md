@@ -15,7 +15,99 @@ _Not yet deployed. Replace with the live URL if Railway is used, or keep the loc
 
 ## Setup (local)
 
-_To be written in Phase 8._
+Runs on Windows (PowerShell) and Linux (bash). About 5 minutes, plus the first package install.
+
+**You need:** Python 3.11, git, a free FalkorDB Cloud instance (host, port, username, password), and a free Groq API key with a tool-calling model.
+
+Commands are shown for Windows first, then Linux. The app runs the venv's Python directly, so you never activate the venv and never change PowerShell's execution policy.
+
+**1. Clone the repo**
+
+Windows and Linux:
+```bash
+git clone https://github.com/blaxko/handover.git
+cd handover
+```
+
+**2. Create the venv and install packages**
+
+Windows:
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+Linux:
+```bash
+python3.11 -m venv .venv
+./.venv/bin/python -m pip install -r requirements.txt
+```
+
+**3. Create `.env` and fill it in**
+
+Windows:
+```powershell
+Copy-Item .env.example .env
+```
+
+Linux:
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
+- `FALKORDB_HOST`, `FALKORDB_PORT`, `FALKORDB_USERNAME`, `FALKORDB_PASSWORD`: from the FalkorDB Cloud dashboard.
+- `FALKORDB_SSL`: leave `false` unless your provider requires TLS.
+- `LLM_BASE_URL`: `https://api.groq.com/openai/v1`.
+- `LLM_API_KEY`: your Groq key (starts with `gsk_`).
+- `LLM_MODEL`: a tool-calling model ID from the Groq console.
+- `DEMO_TOKEN`: a random string. Windows: `[guid]::NewGuid().ToString("N")`. Linux: `python3 -c "import uuid; print(uuid.uuid4().hex)"`.
+- `APP_ORIGIN`: leave empty for local use.
+
+`.env` holds secrets. It is git-ignored. Never commit it.
+
+**4. Load the demo graph**
+
+Windows:
+```powershell
+.\.venv\Scripts\python.exe db\load.py --reset
+.\.venv\Scripts\python.exe db\load.py --check
+```
+
+Linux:
+```bash
+./.venv/bin/python db/load.py --reset
+./.venv/bin/python db/load.py --check
+```
+
+`--check` should print Message 15, Person 9, Service 6, Team 5, Ticket 4, and `invariant ... OK`.
+
+**5. Start the app**
+
+Windows:
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
+```
+
+Linux:
+```bash
+./.venv/bin/python -m uvicorn app.main:app --port 8000
+```
+
+Open http://localhost:8000 for the demo page. Check http://localhost:8000/health. It should return `{"db":"ok","llm_configured":true}`. Stop the server with Ctrl+C.
+
+**6. Run the tests (optional, about 5 minutes)**
+
+Windows: `.\.venv\Scripts\python.exe -m pytest -q`
+Linux: `./.venv/bin/python -m pytest -q`
+
+The tests reset the demo graph and leave it seeded. The golden tests call the real LLM, so they take about 2 minutes.
+
+**Troubleshooting**
+- `py` not found on Windows: install Python 3.11 from python.org, or run `winget install -e --id Python.Python.3.11`.
+- `503 ... FalkorDB is unreachable`: check the `FALKORDB_*` values. If your provider needs TLS, set `FALKORDB_SSL=true`.
+- `429` or "rate limited": wait a few seconds and retry. The page says so.
+- Apply or Reset asks for a token: paste your `DEMO_TOKEN`. The page only receives it when served from this machine.
 
 ## Graph data model
 
@@ -163,7 +255,9 @@ Question ─► Baseline: full-text top-3 Messages ─► LLM ─► baseline an
 
 ## Baseline comparison
 
-_Keyword RAG (matching text) score on the golden set: to be measured in Phase 6._
+Baseline = FalkorDB full-text index + simple keyword re-rank, top 3 messages, no hand-picked answers.
+
+The baseline sees the same messages as the graph, including the event message after a change event. It answers only from its top 3 snippets. Per-question answers are in [docs/baseline_results.md](docs/baseline_results.md). Scores are recorded there by hand.
 
 ## AI assistance disclosure
 
