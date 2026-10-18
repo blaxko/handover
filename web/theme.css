@@ -200,25 +200,30 @@ code, pre { font-family: var(--font-mono); }
 .hand { position: absolute; inset: 0; will-change: transform; transition: transform 0.25s linear; }
 .hand img {
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
-  mix-blend-mode: multiply; opacity: 0.95; filter: saturate(0.75) brightness(0.96) contrast(1.22);
+  opacity: 1; filter: saturate(0.92) contrast(1.04);
 }
 .hand.top img { clip-path: inset(0 0 50% 0); }
 .hand.bottom img { clip-path: inset(50% 0 0 0); }
 .hands-veil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 14% 12% at 47% 50%, rgba(255,255,255,0.5), rgba(255,255,255,0) 100%); }
 /* The node floats in the gap between the fingertips: 47% across, 50% down the photo. */
-.hero-node { position: absolute; left: 47%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; z-index: 2; pointer-events: none; animation: nodeLoop 9s ease-in-out infinite; }
+.hero-node { position: absolute; left: 45.1%; top: 47.8%; width: 22px; height: 22px; margin: -11px 0 0 -11px; z-index: 2; pointer-events: none; animation: nodeLoop 7s ease-in-out infinite; }
 .hero-node::before { content: ""; position: absolute; inset: -18px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,79,154,0.5), rgba(255,79,154,0)); filter: blur(3px); }
 .hero-node .core { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFFFFF 0 18%, var(--pink) 60%, #E83B85 100%); box-shadow: 0 0 18px rgba(255,79,154,0.8); }
 .hero-node .edge { position: absolute; top: 50%; height: 2px; width: 26px; margin-top: -1px; background: var(--pink); border-radius: 2px; }
 .hero-node .edge.l { right: 100%; margin-right: 6px; }
 .hero-node .edge.r { left: 100%; margin-left: 6px; }
 .hero-node::after { content: ""; position: absolute; left: -10px; right: -10px; top: 4px; height: 6px; border-radius: 999px; background: linear-gradient(100deg, transparent, rgba(255,255,255,0.9), transparent); opacity: 0.6; animation: shimmer 4.5s linear infinite; }
-@keyframes nodeLoop {
+@keyframes nodeLoopOLD {
   0% { transform: translate(0, -70px) scale(0.95); opacity: 0.6; }
   25% { transform: translate(-30px, -10px) scale(1); opacity: 1; }
   50% { transform: translate(0, 70px) scale(1.05); opacity: 0.85; }
   75% { transform: translate(30px, -10px) scale(1); opacity: 1; }
   100% { transform: translate(0, -70px) scale(0.95); opacity: 0.6; }
+}
+@keyframes nodeLoop {
+  0% { transform: translate(0, -12px); opacity: 0.7; }
+  50% { transform: translate(0, 12px); opacity: 1; }
+  100% { transform: translate(0, -12px); opacity: 0.7; }
 }
 @keyframes shimmer { from { transform: translateX(-30px); } to { transform: translateX(30px); } }
 
@@ -390,7 +395,7 @@ tr:last-child td { border-bottom: 0; }
   .hero-stage { height: 470px; }
   .hands { width: 118%; top: 44%; }
   .hands img { opacity: 0.8; }
-  .hero-node { left: 47%; top: 50%; }
+  .hero-node { left: 45.1%; top: 47.8%; }
   .hero-glow { height: 300px; top: 46%; }
   .hero h1 { font-size: clamp(2.5rem, 12vw, 3.4rem); }
   .hero .lead { text-shadow: 0 0 18px rgba(255,255,255,1), 0 0 6px rgba(255,255,255,1); }
