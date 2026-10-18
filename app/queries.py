@@ -1,4 +1,4 @@
-"""Cypher templates from PRD §6.6. The only place Cypher lives.
+﻿"""Cypher templates from PRD §6.6. The only place Cypher lives.
 
 Templates are constants. Values go in as parameters ($name), never by
 string formatting. Reads use db.read (ro_query); writes use db.write.
@@ -128,7 +128,7 @@ GRAPH_ALL = """
 MATCH (a)-[r]->(b)
 RETURN DISTINCT a.id AS src, coalesce(a.name, a.id) AS src_name, labels(a)[0] AS src_label,
        b.id AS dst, coalesce(b.name, b.id) AS dst_name, labels(b)[0] AS dst_label,
-       type(r) AS type, r.valid_from AS valid_from, r.valid_to AS valid_to
+       type(r) AS type, r.valid_from AS valid_from, r.valid_to AS valid_to, r.source AS source
 """
 
 # Support: message text for citations

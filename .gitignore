@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .env
 .pytest_cache/
+design-refs/
+web/img/hands.jpg

@@ -3,107 +3,135 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Handover · dashboard</title>
-  <meta name="description" content="Company brain on FalkorDB: graph answers with their path and sources, next to a keyword RAG baseline.">
+  <title>Handover · Dashboard</title>
+  <meta name="description" content="Ask who owns what, see the path and the sources, and hand work over.">
   <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/theme.css?v=12">
-  <link rel="stylesheet" href="/static/style.css?v=12">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css?v=13">
+  <link rel="stylesheet" href="/static/style.css?v=14">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js" defer></script>
-  <script src="/static/app.js?v=11" defer></script>
+  <script src="/static/app.js?v=13" defer></script>
+  <script src="/static/dashboard.js?v=14" defer></script>
 </head>
-<body>
-  <div class="sky" aria-hidden="true">
+<body class="dash">
+  <div class="sky-layer" aria-hidden="true">
     <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
   </div>
+  <div class="frame" aria-hidden="true"></div>
   <a class="skip" href="#q">Skip to the ask box</a>
 
-  <header class="top site-header">
-    <div class="wrap top-inner">
-      <div class="brand-block">
-        <a class="brand" href="/" aria-label="Handover home"><span class="mark" aria-hidden="true"></span>Handover</a>
-        <a class="home-link" href="/">← Home</a>
-      </div>
-      <p class="dash-title">Dashboard · who owns what, now</p>
-      <div class="top-actions">
-        <span id="health" class="pill" data-state="unknown" role="status">Checking graph…</span>
-        <button id="reset" type="button" class="btn btn-glass" title="Re-seed the demo graph">Reset demo</button>
-      </div>
-    </div>
-  </header>
+  <div class="shell">
+    <aside class="rail" aria-label="Sections">
+      <a class="rail-logo" href="/" aria-label="Handover home"><span class="mark" aria-hidden="true"></span></a>
+      <nav class="rail-icons" aria-label="Dashboard sections">
+        <a href="#ask" class="rail-btn is-active" aria-label="Ask" title="Ask"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+        <a href="#handover" class="rail-btn" aria-label="Hand over" title="Hand over"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="#graph-card" class="rail-btn" aria-label="Graph" title="Graph"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 7l8 0M7.5 8.2l3.5 7.6M16 10.2l-3 5.6" stroke="currentColor" stroke-width="1.6"/></svg></a>
+        <a href="#history" class="rail-btn" aria-label="History" title="History"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 4v4h4M12 8v4l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </nav>
+    </aside>
 
-  <main>
-    <section class="ask" aria-labelledby="ask-title">
-      <h2 id="ask-title" class="sr-only">Ask</h2>
-      <form id="ask-form" role="search">
-        <label for="q" class="sr-only">Ask a question about Tidewell</label>
-        <input id="q" name="q" type="text" autocomplete="off" maxlength="500"
-               placeholder="Ask about Tidewell, e.g. Who owns payments-api?" required>
-        <button type="submit" id="ask-btn" class="primary">Ask</button>
-      </form>
-      <div class="examples" id="examples" aria-label="Example questions"></div>
-    </section>
+    <nav class="tree" aria-label="Services and people">
+      <a class="home-link" href="/">← Home</a>
+      <p class="tree-title">Sample workspace</p>
+      <p class="tree-sub">Tidewell (sample workspace)</p>
+      <div class="tree-group"><p class="tree-head">Services</p><ul id="tree-services" class="tree-list"></ul></div>
+      <div class="tree-group"><p class="tree-head">People</p><ul id="tree-people" class="tree-list"></ul></div>
+    </nav>
 
-    <div class="columns">
-      <div class="left">
-        <article class="card" id="answer-card" aria-labelledby="answer-title">
-          <h2 id="answer-title">Graph answer</h2>
+    <div class="content">
+      <header class="topbar">
+        <p class="dash-title">Dashboard · who owns what, now</p>
+        <div class="top-actions">
+          <span id="health" class="pill" data-state="unknown" role="status">Checking graph…</span>
+          <button id="reset" type="button" class="btn btn-glass">Reset demo</button>
+        </div>
+      </header>
+
+      <section class="ask" id="ask" aria-labelledby="ask-title">
+        <h2 id="ask-title" class="sr-only">Ask</h2>
+        <form id="ask-form" role="search" class="ask-form">
+          <label for="q" class="sr-only">Ask a question about Tidewell (sample workspace)</label>
+          <input id="q" name="q" type="text" autocomplete="off" maxlength="500" required
+                 placeholder="Try asking “who owns payments-api”">
+          <button type="submit" id="ask-btn" class="btn btn-primary">Ask <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </form>
+        <div class="examples" id="examples" aria-label="Example questions"></div>
+      </section>
+
+      <h1 class="page-title">Who owns it</h1>
+
+      <section class="kpis" aria-label="Summary">
+        <article class="box kpi"><p class="kpi-label">Services</p><p class="kpi-value" id="kpi-services">–</p></article>
+        <article class="box kpi"><p class="kpi-label">Open tickets</p><p class="kpi-value" id="kpi-tickets">–</p></article>
+        <article class="box kpi"><p class="kpi-label">Handovers</p><p class="kpi-value" id="kpi-handovers">–</p></article>
+        <article class="box dark kpi-hero" id="hero-card" aria-live="polite">
+          <p class="kpi-label">Current answer</p>
+          <p class="hero-answer" id="hero-answer">Ask a question to see it here.</p>
+        </article>
+      </section>
+
+      <section class="people" aria-label="People in the graph">
+        <p class="people-label">People</p>
+        <div class="pills" id="people-pills"></div>
+      </section>
+
+      <div class="panels">
+        <article class="box panel panel-graph" id="graph-card" aria-labelledby="graph-title">
+          <div class="panel-head">
+            <h2 id="graph-title">Graph view</h2>
+            <button type="button" id="toggle-full" class="btn btn-glass" aria-pressed="false">Show full graph</button>
+          </div>
+          <p class="muted" id="graph-caption">Focused view: the answer's subgraph and its direct neighbours.</p>
+          <p id="graph-msg" class="notice" hidden></p>
+          <div id="graph" role="img" aria-label="Graph of people, services, tickets and messages. The answer path is highlighted."></div>
+          <ul class="path-text" id="path-text"><li>No path for this view. Ask a question to light up its path.</li></ul>
+          <p class="legend"><span><i class="sw sw-open"></i>open edge</span><span><i class="sw sw-closed"></i>dashed grey, labelled “closed”</span><span><i class="sw sw-path"></i>pink, on the answer path</span></p>
+        </article>
+
+        <article class="box panel" id="answer-card" aria-labelledby="answer-title">
+          <div class="panel-head"><h2 id="answer-title">Graph answer</h2></div>
           <div class="body" id="answer" aria-live="polite">
             <p class="muted">Ask a question, or pick an example, to see the graph answer.</p>
           </div>
         </article>
 
-        <article class="card" id="baseline-card" aria-labelledby="baseline-title" style="margin-top:16px">
-          <h2 id="baseline-title">Keyword RAG (matching text)</h2>
+        <article class="box panel" id="baseline-card" aria-labelledby="baseline-title">
+          <div class="panel-head"><h2 id="baseline-title">Keyword search</h2></div>
+          <p class="muted">The same question, answered from the top 3 matching messages only. No graph.</p>
           <div class="body" id="baseline" aria-live="polite">
-            <p class="muted">The same question, answered from the top 3 matching messages only. No graph.</p>
+            <p class="muted">Waiting for a question.</p>
           </div>
         </article>
-      </div>
 
-      <article class="card graph-wrap" id="graph-card" aria-labelledby="graph-title">
-        <h2 id="graph-title">Graph view</h2>
-        <div class="graph-toolbar">
-          <p class="muted" id="graph-caption">Focused view: the answer's subgraph and its direct neighbours.</p>
-          <button type="button" id="toggle-full" aria-pressed="false">Show full graph</button>
-        </div>
-        <p id="graph-msg" class="notice" hidden></p>
-        <div id="graph" role="img" aria-label="Graph of people, services, tickets and messages. The answer path is highlighted."></div>
-        <ul class="legend" aria-label="Legend">
-          <li><span class="swatch"></span>open edge</li>
-          <li><span class="swatch closed"></span>dashed grey edge, labelled “closed” (ended, kept as history)</li>
-          <li><span class="swatch path"></span>thick blue edge and outlined node = on the answer path</li>
-        </ul>
-        <div>
-          <p class="muted" style="margin:0 0 4px">Answer path, as text</p>
-          <ul class="path-text" id="path-text"><li>No path for this view.</li></ul>
-        </div>
-      </article>
-    </div>
-  </main>
+        <article class="box panel" id="handover" aria-labelledby="handover-title">
+          <div class="panel-head"><h2 id="handover-title">Hand it over</h2></div>
+          <p class="muted">Tell it who left and who takes over. Old ownership closes, nothing is deleted.</p>
+          <label for="event-text" class="sr-only">Change event text</label>
+          <textarea id="event-text" rows="3"></textarea>
+          <div class="event-actions">
+            <button type="button" id="apply" class="btn btn-accent">Hand it over</button>
+            <button type="button" id="apply-demo" class="btn btn-glass">Apply demo event (no LLM)</button>
+          </div>
+          <p id="event-result" class="notice" role="status" aria-live="polite"></p>
+          <div class="token" id="token-row" hidden>
+            <label for="token">Demo token (needed for Hand it over and Reset when the page is not on this machine)</label>
+            <div class="token-row">
+              <input id="token" type="password" autocomplete="off" placeholder="X-Demo-Token value">
+              <button type="button" id="token-save" class="btn btn-glass">Use token</button>
+            </div>
+          </div>
+        </article>
 
-  <section class="event-wrap" aria-labelledby="event-title">
-    <h2 id="event-title">Change event</h2>
-    <section class="event" aria-label="Change event form">
-    <label for="event-text" class="sr-only">Change event text</label>
-    <textarea id="event-text" rows="3"></textarea>
-    <div class="row">
-      <button type="button" id="apply" class="btn btn-primary">Hand it over</button>
-      <button type="button" id="apply-demo" class="btn btn-glass">Apply demo event (no LLM)</button>
-      <p id="event-result" class="notice" role="status" aria-live="polite" style="flex:1 1 320px;margin:0"></p>
-    </div>
-    <div class="token" id="token-row" hidden>
-      <label for="token">Demo token (needed for Apply and Reset when the page is not on this machine)</label>
-      <div class="row" style="flex-wrap:nowrap">
-        <input id="token" type="password" autocomplete="off" placeholder="X-Demo-Token value">
-        <button type="button" id="token-save">Use token</button>
+        <article class="box panel" id="history" aria-labelledby="history-title">
+          <div class="panel-head"><h2 id="history-title">History</h2></div>
+          <p class="muted">Ownership is never deleted. Ask “who owned payments-api on 2026-09-01?” to look back.</p>
+          <a class="btn btn-quiet" href="/graph">Read the data model →</a>
+        </article>
       </div>
     </div>
-    </section>
-  </section>
-
-  <p class="footer-line">The graph is the product. Remove FalkorDB and none of this works.</p>
+  </div>
 </body>
 </html>

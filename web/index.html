@@ -3,29 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Handover · Who owns it, now</title>
-  <meta name="description" content="Handover is a company brain on a graph. Ask who owns anything, see the path that proves it, and hand work over when people move on.">
+  <title>Handover · Who owns it, right now</title>
+  <meta name="description" content="Ask who owns anything. See the path that proves it. Hand work over when people move on.">
   <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/theme.css?v=12">
-  <script src="/static/site.js?v=11" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css?v=15">
+  <script src="/static/site.js?v=13" defer></script>
+  <script src="/static/hero.js?v=13" defer></script>
 </head>
 <body>
-  <div class="sky" aria-hidden="true">
+  <div class="sky-layer" aria-hidden="true">
     <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
   </div>
+  <div class="frame" aria-hidden="true"></div>
   <a class="sr-only" href="#main">Skip to content</a>
 
   <header class="site-header">
-    <div class="wrap">
+    <div class="bar">
       <a class="brand" href="/" aria-label="Handover home"><span class="mark" aria-hidden="true"></span>Handover</a>
       <nav class="nav" aria-label="Main">
         <a href="/how-it-works">How it works</a>
         <a href="/graph">The graph</a>
-        <a href="/proof">Proof</a>
-        <a class="btn btn-ink only-desktop" href="/app" style="min-height:40px;padding:8px 16px;">Hand it over →</a>
+        <a href="/accuracy">Accuracy</a>
+        <a href="#faq">FAQ</a>
+        <a class="btn btn-primary" href="/app">Hand it over <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       </nav>
       <button class="btn btn-glass menu-btn" type="button" aria-expanded="false" aria-controls="menu-panel" aria-label="Open menu">Menu</button>
     </div>
@@ -35,109 +38,181 @@
     <button class="btn btn-glass menu-close" type="button">Close</button>
     <a href="/how-it-works">How it works</a>
     <a href="/graph">The graph</a>
-    <a href="/proof">Proof</a>
-    <a class="btn btn-primary" href="/app">Hand it over →</a>
+    <a href="/accuracy">Accuracy</a>
+    <a href="#faq">FAQ</a>
+    <a class="btn btn-primary" href="/app">Hand it over</a>
   </div>
 
   <main id="main">
     <section class="hero wrap" aria-labelledby="hero-title">
-      <div class="hero-art" aria-hidden="true">
-        <svg viewBox="0 0 1200 520" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-          <!-- Left hand reaches in, giving -->
-          <g>
-            <path d="M0,350 C90,330 180,322 262,316"/>
-            <path d="M262,316 C300,306 340,300 380,296"/>
-            <path d="M380,296 C404,268 432,250 462,252 C486,254 492,276 472,292 C452,308 414,314 386,318"/>
-            <path d="M438,262 C468,230 496,196 520,176 C534,164 552,172 544,190 C530,220 500,260 470,298"/>
-            <path d="M458,276 C494,250 526,224 556,206 C570,198 586,206 578,222 C566,246 530,282 492,306"/>
-            <path d="M432,300 C450,334 470,358 492,372"/>
-          </g>
-          <!-- Right hand reaches in, receiving (mirror of the left) -->
-          <g transform="translate(1200 0) scale(-1 1)">
-            <path d="M0,350 C90,330 180,322 262,316"/>
-            <path d="M262,316 C300,306 340,300 380,296"/>
-            <path d="M380,296 C404,268 432,250 462,252 C486,254 492,276 472,292 C452,308 414,314 386,318"/>
-            <path d="M438,262 C468,230 496,196 520,176 C534,164 552,172 544,190 C530,220 500,260 470,298"/>
-            <path d="M458,276 C494,250 526,224 556,206 C570,198 586,206 578,222 C566,246 530,282 492,306"/>
-            <path d="M432,300 C450,334 470,358 492,372"/>
-          </g>
-          <!-- The node passes from one hand to the other and back, in a slow loop -->
-          <g class="node-glow" stroke="none">
-            <g>
-              <animateMotion dur="7s" repeatCount="indefinite" rotate="auto"
-                path="M470,262 C560,120 640,120 730,262 C640,404 560,404 470,262"/>
-              <g transform="translate(0 0)">
-                <line x1="-26" y1="0" x2="-11" y2="0" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-                <line x1="11" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-                <circle r="11" fill="var(--pink)" stroke="currentColor" stroke-width="3"/>
-              </g>
-            </g>
-          </g>
-        </svg>
+      <span class="eyebrow reveal in">New · Ownership that stays current ›</span>
+      <div class="hero-stage">
+        <div class="hands" aria-hidden="true" data-parallax>
+          <div class="hands-mask">
+            <div class="hand top"><img src="/static/img/hands.webp" alt="" width="1200" height="1800" decoding="async"></div>
+            <div class="hand bottom"><img src="/static/img/hands.webp" alt="" width="1200" height="1800" decoding="async"></div>
+          </div>
+          <div class="hands-veil"></div>
+        </div>
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-node" aria-hidden="true" data-node><span class="edge l"></span><span class="core"></span><span class="edge r"></span></div>
+        <div class="hero-copy">
+          <h1 id="hero-title">Who owns it,<span class="line2">right now.</span></h1>
+          <p class="lead">Ask who owns anything. See the path that proves it. Hand work over when people move on.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="/app">Hand it over <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+            <a class="btn btn-quiet" href="/how-it-works">See how it works</a>
+          </div>
+        </div>
       </div>
-      <div class="hero-copy">
-        <h1 id="hero-title">Who owns it — now.</h1>
-        <p class="lead">Handover is a company brain on a graph. Ask who owns anything, see the path that proves it, and hand work over when people move on.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="/app">Hand it over <span class="arrow" aria-hidden="true">→</span></a>
+
+      <div class="hero-preview reveal" style="--d:120ms" aria-label="Preview of the dashboard">
+        <div class="frame-win">
+          <div class="preview-bar"><i></i><i></i><i></i></div>
+          <div class="preview-body">
+            <aside class="preview-side">
+              <b>Services</b><span>payments-api</span><span>ledger</span><span>auth</span>
+              <b style="margin-top:8px">People</b><span>Ada Okafor</span><span>Tunde Bakare</span>
+            </aside>
+            <div class="preview-main">
+              <div class="preview-row"><span>Who owns payments-api?</span><span class="tag">via LLM</span></div>
+              <div class="preview-row"><span>Ada Okafor, since 2026-10-17</span><span class="tag">source · change event</span></div>
+              <div class="preview-row"><span>Tunde Bakare (closed 2026-10-17)</span><span class="tag">history kept</span></div>
+              <div class="preview-row"><span>Refund webhook returns 500</span><span class="tag">moved to Ada</span></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="ticker" aria-label="Highlights">
       <div class="ticker-track" aria-hidden="true">
-        <span>Every answer shows its path</span><span>History is never deleted</span><span>Tickets follow the new owner</span><span>Built on FalkorDB</span><span>12 of 12 golden questions</span>
-        <span>Every answer shows its path</span><span>History is never deleted</span><span>Tickets follow the new owner</span><span>Built on FalkorDB</span><span>12 of 12 golden questions</span>
+        <span>Every answer shows its path</span><span>History is never deleted</span><span>Tickets follow the new owner</span><span>Built on FalkorDB</span><span>12 of 12 test questions answered correctly</span>
+        <span>Every answer shows its path</span><span>History is never deleted</span><span>Tickets follow the new owner</span><span>Built on FalkorDB</span><span>12 of 12 test questions answered correctly</span>
       </div>
     </section>
 
-    <section class="section wrap" aria-label="How Handover works">
-      <div class="steps">
-        <article class="box step reveal" style="--d:0ms">
-          <div class="num" aria-hidden="true">01</div>
-          <h3>Ask</h3>
-          <p>“Who owns payments-api?” Get a name, the graph path, and the message that proves it.</p>
-        </article>
-        <article class="box step reveal" style="--d:120ms">
-          <div class="num" aria-hidden="true">02</div>
-          <h3>Hand over</h3>
-          <p>Tell it “Tunde left, Ada takes over.” Old ownership closes, new opens, nothing is deleted.</p>
-        </article>
-        <article class="box step reveal" style="--d:240ms">
-          <div class="num" aria-hidden="true">03</div>
-          <h3>Act</h3>
-          <p>Open tickets move to the new owner automatically.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section wrap" aria-label="Plain search compared with Handover">
-      <div class="contrast">
-        <article class="box old reveal">
-          <p class="label">Plain search</p>
-          <p class="quote">Tunde owns it (stale)</p>
-          <p class="muted">Matches the most similar text, which is usually the oldest claim.</p>
-        </article>
-        <article class="box new reveal" style="--d:120ms">
-          <p class="label">Handover</p>
-          <p class="quote">Ada Okafor, since 2026-10-17</p>
-          <span class="src-chip">Source · change event, 2026-10-17</span>
-        </article>
-      </div>
-    </section>
-
-    <section class="section wrap" aria-label="Closing">
-      <article class="box dark closing reveal">
-        <h2>The graph is the product.</h2>
-        <a class="btn btn-primary" href="/app">Hand it over <span class="arrow" aria-hidden="true">→</span></a>
+    <section class="section wrap" aria-label="About">
+      <article class="box reveal" style="padding:clamp(40px,6vw,80px) clamp(20px,4vw,56px);">
+        <p class="statement">Handover keeps who owns what <span class="chip-inline"><span class="av">AO</span>Ada Okafor</span> current, shows the path behind every answer, and moves the work when people move on. <span class="nametag">Tunde Bakare</span></p>
       </article>
+    </section>
+
+    <section class="section wrap" aria-labelledby="features-title">
+      <div class="section-head reveal">
+        <span class="eyebrow">Features</span>
+        <h2 id="features-title">Four things, done properly.</h2>
+      </div>
+      <div class="features">
+        <article class="box feature reveal" style="--d:0ms">
+          <div class="orb-wrap"><div class="orb"></div>
+            <svg class="spark s1" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+            <svg class="spark s2" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+          </div>
+          <h3>Ask</h3>
+          <p>Get a name, the date it applies, and the message that says so.</p>
+          <span class="example">who owns payments-api?</span>
+        </article>
+        <article class="box feature reveal" style="--d:100ms">
+          <div class="orb-wrap"><div class="orb pink"></div>
+            <svg class="spark s1" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+            <svg class="spark s2" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+          </div>
+          <h3>See the path</h3>
+          <p>The graph path behind the answer, with the source message beside it.</p>
+          <span class="example">Ada Okafor → payments-api → m01</span>
+        </article>
+        <article class="box feature reveal" style="--d:0ms">
+          <div class="orb-wrap"><div class="orb peri"></div>
+            <svg class="spark s1" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+            <svg class="spark s2" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+          </div>
+          <h3>Hand over</h3>
+          <p>Old ownership closes and new ownership opens. Nothing is deleted.</p>
+          <span class="example">Tunde left, Ada takes over.</span>
+        </article>
+        <article class="box feature reveal" style="--d:100ms">
+          <div class="orb-wrap"><div class="orb pink"></div>
+            <svg class="spark s1" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+            <svg class="spark s2" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0 L9.4 6.6 L16 8 L9.4 9.4 L8 16 L6.6 9.4 L0 8 L6.6 6.6 Z" fill="currentColor"/></svg>
+          </div>
+          <h3>Act</h3>
+          <p>Open tickets move to the new owner the day the handover takes effect.</p>
+          <span class="example">t-101 → Ada Okafor</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="stack-title">
+      <div class="section-head reveal">
+        <span class="eyebrow">Stack</span>
+        <h2 id="stack-title">Works with</h2>
+      </div>
+      <div class="tiles">
+        <div class="tile reveal" style="--d:0ms"><span class="glyph" aria-hidden="true">DB</span><span class="name">FalkorDB</span><span class="sub">Graph storage</span></div>
+        <div class="tile reveal" style="--d:80ms"><span class="glyph" aria-hidden="true">CQL</span><span class="name">Cypher</span><span class="sub">Fixed templates</span></div>
+        <div class="tile reveal" style="--d:160ms"><span class="glyph" aria-hidden="true">N·E</span><span class="name">Graph node</span><span class="sub">People, services, tickets</span></div>
+        <div class="tile reveal" style="--d:240ms"><span class="glyph" aria-hidden="true">LLM</span><span class="name">Language model</span><span class="sub">Routes and phrases</span></div>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="contrast-title">
+      <article class="box contrast-card reveal">
+        <span class="eyebrow">Why it matters</span>
+        <h2 id="contrast-title">Plain search remembers the past. Handover knows the present.</h2>
+        <div class="contrast">
+          <div class="side old">
+            <p class="label">Plain search</p>
+            <p class="quote">Tunde owns it.</p>
+            <p class="muted">The most similar text, which is often the oldest claim.</p>
+          </div>
+          <div class="side new">
+            <p class="label">Handover</p>
+            <p class="quote">Ada Okafor, since 2026-10-17.</p>
+            <span class="src-chip">Source · change event, 2026-10-17</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section wrap" id="faq" aria-labelledby="faq-title">
+      <div class="section-head reveal">
+        <span class="eyebrow">FAQ</span>
+        <h2 id="faq-title">Questions, answered.</h2>
+      </div>
+      <div class="faq reveal">
+        <details>
+          <summary>What is Handover?</summary>
+          <p class="answer">A company brain on a graph. It tells you who owns a service now, and shows the path and the message behind that answer.</p>
+        </details>
+        <details>
+          <summary>How does it know who owns something?</summary>
+          <p class="answer">Ownership is an edge with a start date, an optional end date and a source message. Each answer is a fixed query on that graph, not a guess from text.</p>
+        </details>
+        <details>
+          <summary>What happens when someone leaves?</summary>
+          <p class="answer">A change event such as “Tunde left, Ada takes over” closes the old edges and opens new ones. Open tickets move to the new owner.</p>
+        </details>
+        <details>
+          <summary>Is anything ever deleted?</summary>
+          <p class="answer">No. Ownership is closed, not removed, so you can still ask who owned a service on any past date.</p>
+        </details>
+        <details>
+          <summary>Where does the data live?</summary>
+          <p class="answer">In FalkorDB. The demo uses Tidewell (sample workspace), a made-up company with sample people and services.</p>
+        </details>
+      </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
-      <span>Built for Graph Hacks</span>
-      <span>FalkorDB · synthetic data</span>
+      <a class="brand" href="/" aria-label="Handover home"><span class="mark" aria-hidden="true"></span>Handover</a>
+      <p class="muted" style="max-width:56ch">Ownership with receipts. Sample data: Tidewell (sample workspace).</p>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/how-it-works">How it works</a><a href="/graph">The graph</a><a href="/accuracy">Accuracy</a><a href="/app">Dashboard</a>
+      </nav>
+      <small>© Handover</small>
     </div>
   </footer>
 </body>

@@ -1,4 +1,4 @@
-"""FastAPI app: the API for PRD §6.4. The page in web/ is added in Phase 7.
+﻿"""FastAPI app: the API for PRD §6.4. The page in web/ is added in Phase 7.
 
 Error shape everywhere: {"error": {"code": str, "message": str, "details"?: any}}.
 """
@@ -12,7 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 import html
 
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -127,14 +127,20 @@ def _baseline_table() -> str:
     return "".join(out)
 
 
-@app.get("/proof", include_in_schema=False)
-def proof():
-    text = (WEB / "proof.html").read_text(encoding="utf-8")
-    text = text.replace("{{GOLDEN}}", html.escape(
-        "12 of 12 golden questions passed in the last run, through the API with the live LLM. "
-        "The keyword baseline is shown beside the graph answers, unscored."))
+@app.get("/accuracy", include_in_schema=False)
+def accuracy():
+    text = (WEB / "accuracy.html").read_text(encoding="utf-8")
+    text = text.replace("{{ACCURACY_SUMMARY}}", html.escape(
+        "12 of 12 test questions answered correctly in the last run, through the API with the live LLM. "
+        "The keyword search is shown beside the graph answers, unscored."))
     text = text.replace("{{BASELINE_TABLE}}", _baseline_table())
     return HTMLResponse(text)
+
+
+@app.get("/proof", include_in_schema=False)
+def proof_moved():
+    # The page moved to /accuracy. Old links keep working.
+    return RedirectResponse("/accuracy", status_code=301)
 
 
 @app.get("/config")

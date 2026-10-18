@@ -1,4 +1,4 @@
-"""Turn a tool result into {nodes, edges} for the graph view.
+﻿"""Turn a tool result into {nodes, edges} for the graph view.
 
 build() is pure: no database calls. name_ids maps names that the result carries
 (persons, services, tickets) to their graph ids. A name with no id gets a
@@ -29,7 +29,7 @@ def neighbourhood(graph, focus: str, depth: int) -> dict | None:
             nodes.setdefault(node_id, _node(node_id, label, name))
         edges.append({"from": r["src"], "to": r["dst"], "type": r["type"],
                       "closed": r["valid_to"] is not None,
-                      "valid_from": r["valid_from"], "valid_to": r["valid_to"]})
+                      "valid_from": r["valid_from"], "valid_to": r["valid_to"], "source": r.get("source")})
     return {"nodes": list(nodes.values()), "edges": edges}
 
 
@@ -43,7 +43,7 @@ def whole_graph(graph) -> dict:
             nodes.setdefault(node_id, _node(node_id, label, name))
         edges.append({"from": r["src"], "to": r["dst"], "type": r["type"],
                       "closed": r["valid_to"] is not None,
-                      "valid_from": r["valid_from"], "valid_to": r["valid_to"]})
+                      "valid_from": r["valid_from"], "valid_to": r["valid_to"], "source": r.get("source")})
     return {"nodes": list(nodes.values()), "edges": edges}
 
 

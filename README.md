@@ -266,3 +266,7 @@ Built with Claude Code (Anthropic) for scaffolding the API and UI. Graph model, 
 ## Synthetic data statement
 
 All data is synthetic. The company "Tidewell", its people, services, tickets, and messages are fictional. No real employees, companies, or Slack/Gmail/Jira data are used.
+
+## Image credits
+
+- Hero photo (`web/img/hands.webp`): photographer name and source link to be added. Free-licence photo from Unsplash or Pexels, cropped and compressed for the page.

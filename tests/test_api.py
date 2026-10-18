@@ -1,4 +1,4 @@
-"""HTTP contract checks: auth, error shapes, CORS, health, graph view, baseline shape."""
+﻿"""HTTP contract checks: auth, error shapes, CORS, health, graph view, baseline shape."""
 from pathlib import Path
 
 import pytest
@@ -71,11 +71,23 @@ def test_dashboard_moved_to_app(client):
 
 def test_marketing_pages_return_200(client):
     assert client.get("/how-it-works").status_code == 200
-    proof = client.get("/proof")
-    assert proof.status_code == 200
-    assert "Graph against keyword search" in proof.text
-    assert "Who owns payments-api?" in proof.text  # a row from docs/baseline_results.md
+    accuracy = client.get("/accuracy")
+    assert accuracy.status_code == 200
+    assert "12 of 12 test questions answered correctly" in accuracy.text
+    assert "Who owns payments-api?" in accuracy.text  # a row from docs/baseline_results.md
+    assert "hackathon" not in accuracy.text.lower()
 
+
+def test_proof_redirects_to_accuracy(client):
+    resp = client.get("/proof", follow_redirects=False)
+    assert resp.status_code == 301
+    assert resp.headers["location"] == "/accuracy"
+
+
+def test_landing_has_no_hackathon_wording(client):
+    text = client.get("/").text.lower()
+    for word in ("hackathon", "graph hacks", "golden", "built for"):
+        assert word not in text, word
 
 def test_graph_page_shows_templates_from_queries(client):
     resp = client.get("/graph", headers={"Accept": "text/html"})
