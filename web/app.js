@@ -475,8 +475,8 @@
       out.textContent = 'Enter the demo token below, then apply again.';
       return;
     }
-    out.className = 'notice';
-    out.textContent = 'Applying…';
+    out.className = 'notice shimmer';
+    out.textContent = 'Handing over…';
     const res = await api('/events', { method: 'POST', body: payload });
     if (!res.ok) {
       if (res.status === 401) showTokenField(true);

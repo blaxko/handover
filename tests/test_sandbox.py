@@ -129,3 +129,19 @@ def test_about_statement_keeps_the_sentence_and_its_three_highlights():
     assert "Handover keeps who owns what current, shows the path behind every answer, and moves the work when people move on." in " ".join(text.split())
     assert html.count("<mark>") == 3
     assert "cursor-tunde" in html and "cursor-ada" in html
+
+
+def test_loading_states_show_setup_text_shimmer_and_handing_over():
+    js = (ROOT / "web" / "dashboard.js").read_text(encoding="utf-8")
+    app_js = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    html = (ROOT / "web" / "app.html").read_text(encoding="utf-8")
+    css = (ROOT / "web" / "style.css").read_text(encoding="utf-8")
+    # The friendly setup line, in the KPI area and the dark card.
+    assert "Setting up your private workspace…" in js and "Setting up your private workspace…" in html
+    assert 'id="workspace-status"' in html and 'id="kpis"' in html
+    assert "is-loading" in js and ".kpis.is-loading" in css and "#hero-card.is-loading" in css
+    # The error only appears after the last attempt fails.
+    assert "if (firstLoad) setLoading(false);" in js and "setError(true)" in js
+    # "Hand it over" shows its own progress state, not "Applying…".
+    assert "Handing over…" in app_js and "Applying…" not in app_js and "notice shimmer" in app_js
+    assert ".notice.shimmer" in css and "prefers-reduced-motion" in css

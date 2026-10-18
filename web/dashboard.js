@@ -5,8 +5,10 @@
   'use strict';
   const $ = (sel) => document.querySelector(sel);
   const DEFAULT_OWNER_SERVICE = 's-payments';
+  const SETUP_TEXT = 'Setting up your private workspace…';
+  const ATTEMPT_TIMEOUT_MS = 25000;
 
-  const state = { overview: null, onPath: new Set() };
+  const state = { overview: null, onPath: new Set(), loading: false };
 
   function item(label, onClick) {
     const li = document.createElement('li');
@@ -25,23 +27,44 @@
     $('#answer-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // JSON only. A non-JSON reply (an HTML page, an error page) counts as a failure, not as "no data".
+  // JSON only. A non-JSON reply, a timeout or an error page counts as a failed attempt.
+  // The error is shown only after every attempt has failed.
   async function getJson(path) {
     let delay = 400;
     let lastError = 'no response';
     for (let attempt = 0; attempt < 3; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
       try {
-        const res = await fetch(path, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        const res = await fetch(path, {
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin',
+          signal: controller.signal,
+        });
         const type = res.headers.get('content-type') || '';
         if (res.ok && type.includes('application/json')) return await res.json();
         lastError = `HTTP ${res.status} (${type || 'no content type'})`;
       } catch (e) {
-        lastError = e.message;
+        lastError = e.name === 'AbortError' ? 'timed out' : e.message;
+      } finally {
+        clearTimeout(timer);
       }
       await new Promise((r) => setTimeout(r, delay));
       delay *= 3;
     }
     throw new Error(lastError);
+  }
+
+  // Loading: a friendly status line, shimmering KPI values and a shimmering dark card.
+  function setLoading(on) {
+    state.loading = on;
+    $('#workspace-status').hidden = !on;
+    $('#kpis').classList.toggle('is-loading', on);
+    $('#hero-card').classList.toggle('is-loading', on);
+    if (on) {
+      ['#kpi-services', '#kpi-tickets', '#kpi-handovers'].forEach((id) => { $(id).textContent = ''; });
+      $('#hero-answer').textContent = SETUP_TEXT;
+    }
   }
 
   function setError(show) {
@@ -79,11 +102,19 @@
   }
 
   async function refresh() {
+    // The loading state shows only while nothing has loaded yet, so later refreshes do not flicker.
+    const firstLoad = !state.overview;
+    if (firstLoad) setLoading(true);
     try {
       renderOverview(await getJson('/api/overview'));
     } catch (e) {
-      console.error('Dashboard: could not load /api/overview:', e.message);
+      console.error('Dashboard: could not load /api/overview after retries:', e.message);
+      if (firstLoad) setLoading(false);
       setError(true);
+      if (firstLoad) $('#hero-answer').textContent = 'Couldn’t load your workspace. Use Retry above.';
+      return;
+    } finally {
+      if (state.loading) setLoading(false);
     }
   }
 
@@ -121,13 +152,18 @@
   }
 
   function showDefaultOwner() {
-    const owner = state.overview && state.overview.owners[DEFAULT_OWNER_SERVICE];
+    if (!state.overview) return;
+    const owner = state.overview.owners[DEFAULT_OWNER_SERVICE];
     if (owner) setOwnerLine(ownerLine(owner.person, owner.since, owner.source));
     else setOwnerLine('Ask a question to see it here.');
   }
 
   async function boot() {
-    $('#kpi-retry').addEventListener('click', refresh);
+    $('#kpi-retry').addEventListener('click', () => {
+      setError(false);
+      state.overview = null;
+      refresh().then(showDefaultOwner);
+    });
     document.addEventListener('handover:answer', onAnswer);
     document.addEventListener('handover:event', onEvent);
     document.addEventListener('handover:reset', () => {

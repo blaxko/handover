@@ -149,3 +149,29 @@ details.cypher pre { overflow-x: auto; background: var(--ink); color: #E9E6F8; b
 .kpi-error .btn { min-height: 36px; padding: 6px 12px; }
 .pills button.on-path { border-color: var(--pink); box-shadow: 0 0 0 2px rgba(255, 79, 154, 0.25); background: #FFF0F7; }
 .pills button.on-path::before { background: linear-gradient(135deg, #FFFFFF, #FF4F9A); }
+
+/* Loading states: a friendly status line, shimmering placeholders, and a progress shimmer on "Hand it over". */
+.workspace-status { margin: 0; font-size: 0.95rem; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 10px; }
+.workspace-status[hidden] { display: none; }
+.workspace-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pink); animation: pulseDot 1.4s ease-in-out infinite; }
+@keyframes pulseDot { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
+.shimmer-ink, .kpis.is-loading .kpi-value, #hero-card.is-loading .hero-answer {
+  background: linear-gradient(90deg, rgba(27,20,70,0.08) 0%, rgba(27,20,70,0.18) 40%, rgba(27,20,70,0.08) 80%);
+  background-size: 220% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 10px;
+}
+.kpis.is-loading .kpi-value { color: transparent; min-height: 2.4rem; min-width: 3ch; display: inline-block; width: 60%; }
+#hero-card.is-loading .hero-answer { color: rgba(255,255,255,0.88); background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.20) 40%, rgba(255,255,255,0.05) 80%); background-size: 220% 100%; animation: shimmer 1.6s ease-in-out infinite; padding: 6px 8px; margin: 0 -8px; }
+#hero-card.is-loading .hero-answer::selection { background: transparent; }
+.notice.shimmer {
+  background-image: linear-gradient(90deg, rgba(255,79,154,0.10) 0%, rgba(255,79,154,0.28) 50%, rgba(255,79,154,0.10) 100%);
+  background-size: 200% 100%;
+  animation: progressShimmer 1.2s linear infinite;
+  color: var(--ink);
+}
+@keyframes progressShimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .workspace-status::before, .kpis.is-loading .kpi-value, #hero-card.is-loading .hero-answer, .notice.shimmer { animation: none; }
+}

@@ -10,10 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/theme.css?v=13">
-  <link rel="stylesheet" href="/static/style.css?v=15">
+  <link rel="stylesheet" href="/static/style.css?v=16">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js" defer></script>
-  <script src="/static/app.js?v=15" defer></script>
-  <script src="/static/dashboard.js?v=15" defer></script>
+  <script src="/static/app.js?v=16" defer></script>
+  <script src="/static/dashboard.js?v=16" defer></script>
 </head>
 <body class="dash">
   <div class="sky-layer" aria-hidden="true">
@@ -65,7 +65,8 @@
       <p class="sandbox-note">This is your private sandbox. Changes only affect you.</p>
 
       <p class="kpi-error" id="kpi-error" role="alert" hidden>Couldn't load the counts. <button type="button" id="kpi-retry" class="btn btn-quiet">Retry</button></p>
-      <section class="kpis" aria-label="Summary">
+      <p class="workspace-status" id="workspace-status" role="status" hidden>Setting up your private workspace…</p>
+      <section class="kpis" id="kpis" aria-label="Summary">
         <article class="box kpi"><p class="kpi-label">Services</p><p class="kpi-value" id="kpi-services">–</p></article>
         <article class="box kpi"><p class="kpi-label">Open tickets</p><p class="kpi-value" id="kpi-tickets">–</p></article>
         <article class="box kpi"><p class="kpi-label">Handovers</p><p class="kpi-value" id="kpi-handovers">–</p></article>
