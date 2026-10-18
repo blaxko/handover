@@ -1,18 +1,47 @@
+﻿import threading
+
+import redis
 from falkordb import FalkorDB
 
 from app.config import Settings, get_settings
 
+# One client per process, shared by every request. Creating a client costs about two seconds
+# against FalkorDB Cloud, so a client per request made every page slow. If a call fails on the
+# connection, the client is dropped and the call is retried once on a fresh one.
+_lock = threading.Lock()
+_client = None
 
-def connect(settings: Settings | None = None):
+CONNECTION_ERRORS = (
+    redis.exceptions.ConnectionError,
+    redis.exceptions.TimeoutError,
+    ConnectionError,
+    TimeoutError,
+)
+
+
+def _get_client(s: Settings):
+    global _client
+    with _lock:
+        if _client is None:
+            _client = FalkorDB(
+                host=s.host,
+                port=s.port,
+                username=s.username,
+                password=s.password,
+                ssl=s.ssl,
+            )
+        return _client
+
+
+def reset_client() -> None:
+    global _client
+    with _lock:
+        _client = None
+
+
+def connect(settings: Settings | None = None, graph_name: str | None = None):
     s = settings or get_settings()
-    client = FalkorDB(
-        host=s.host,
-        port=s.port,
-        username=s.username,
-        password=s.password,
-        ssl=s.ssl,
-    )
-    return client.select_graph(s.graph_name)
+    return _get_client(s).select_graph(graph_name or s.graph_name)
 
 
 def _plain(value):
@@ -30,11 +59,25 @@ def to_dicts(result) -> list[dict]:
     ]
 
 
+def _run(graph, call):
+    """Run a query. On a connection error, reconnect once and try again."""
+    try:
+        return call(graph)
+    except CONNECTION_ERRORS:
+        reset_client()
+        return call(connect(graph_name=graph.name))
+
+
 def read(graph, cypher: str, params: dict | None = None) -> list[dict]:
     """Read path. Uses ro_query so writes cannot run from here."""
-    return to_dicts(graph.ro_query(cypher, params or {}))
+    return to_dicts(_run(graph, lambda g: g.ro_query(cypher, params or {})))
 
 
 def write(graph, cypher: str, params: dict | None = None) -> list[dict]:
-    """Write path. Only load.py, apply_handover and reassign_tickets use this."""
-    return to_dicts(graph.query(cypher, params or {}))
+    """Write path. Never retried: a half-applied write must not run twice. A failed connection is dropped,
+    so the next request reconnects."""
+    try:
+        return to_dicts(graph.query(cypher, params or {}))
+    except CONNECTION_ERRORS:
+        reset_client()
+        raise

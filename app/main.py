@@ -1,29 +1,29 @@
-﻿"""FastAPI app: the API for PRD §6.4. The page in web/ is added in Phase 7.
+﻿"""FastAPI app: the API for PRD §6.4, plus the pages in web/.
 
 Error shape everywhere: {"error": {"code": str, "message": str, "details"?: any}}.
+Every graph call runs in the caller's own sandbox graph (see app/sandbox.py).
 """
-import hmac
-import os
+import html
+import sys
 from pathlib import Path
 
 import redis
-from fastapi import Depends, FastAPI, Header, Query, Request
+from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-import html
-
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import agent, baseline, config, db, events, llm, paths, queries, seed
+from app import agent, baseline, config, db, events, llm, paths, queries, sandbox, seed
 from app.models import AskRequest, BaselineRequest, EventRequest
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "web"
-LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost"}
+SESSION_COOKIE = "hv_sid"
+SESSION_MAX_AGE = 7 * 24 * 3600
 
-app = FastAPI(title="Handover", version="0.7.0")
+app = FastAPI(title="Handover", version="0.8.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[config.get_app_origin()],
@@ -33,7 +33,6 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=WEB), name="static")
 
 UNREACHABLE = "FalkorDB is unreachable. Check FALKORDB_* in .env and that the instance is running."
-_graph = None
 
 
 def _error(status: int, code: str, message: str, details=None) -> JSONResponse:
@@ -53,28 +52,28 @@ async def validation_error(request: Request, exc: RequestValidationError):
     return _error(422, "VALIDATION_ERROR", "Invalid request body.", details=exc.errors())
 
 
-# Database unreachable: 503 with a clear message, never a stack trace.
+# Database unreachable: 503 with a clear message, never a stack trace. The cause goes to the log.
 @app.exception_handler(redis.exceptions.ConnectionError)
 @app.exception_handler(redis.exceptions.TimeoutError)
 @app.exception_handler(ConnectionError)
 @app.exception_handler(TimeoutError)
 async def db_unreachable(request: Request, exc: Exception):
+    print(f"DB unreachable on {request.url.path}: {type(exc).__name__}: {exc}", file=sys.stderr)
     return _error(503, "DB_UNREACHABLE", UNREACHABLE)
 
 
-def get_graph():
-    global _graph
-    if _graph is None:
-        _graph = db.connect()
-    return _graph
+def _is_https(request: Request) -> bool:
+    return request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
 
 
-def require_token(x_demo_token: str | None = Header(default=None)):
-    expected = os.environ.get("DEMO_TOKEN")
-    if not expected:
-        raise StarletteHTTPException(503, "DEMO_TOKEN is not set in .env; demo endpoints are disabled.")
-    if not x_demo_token or not hmac.compare_digest(x_demo_token, expected):
-        raise StarletteHTTPException(401, "Missing or wrong X-Demo-Token header.")
+def session_graph(request: Request, response: Response):
+    """The caller's own graph. A new anonymous session gets a cookie and a seeded sandbox."""
+    sid = request.cookies.get(SESSION_COOKIE)
+    if not sandbox.valid_sid(sid):
+        sid = sandbox.new_sid()
+        response.set_cookie(SESSION_COOKIE, sid, max_age=SESSION_MAX_AGE, httponly=True,
+                            samesite="lax", secure=_is_https(request), path="/")
+    return sandbox.ensure(sid)
 
 
 @app.get("/", include_in_schema=False)
@@ -119,9 +118,8 @@ def _baseline_table() -> str:
     out += ["</tr></thead><tbody>"]
     for row in body:
         out.append("<tr>")
-        for i, c in enumerate(row):
-            text = c if c else "—"
-            out.append(f"<td>{html.escape(text)}</td>")
+        for c in row:
+            out.append(f"<td>{html.escape(c if c else '—')}</td>")
         out.append("</tr>")
     out.append("</tbody></table></div>")
     return "".join(out)
@@ -144,25 +142,25 @@ def proof_moved():
 
 
 @app.get("/config")
-def page_config(request: Request):
-    """The demo token goes to the page only when the server is reached from this machine."""
-    local = request.client is not None and request.client.host in LOCAL_HOSTS
-    token = os.environ.get("DEMO_TOKEN") if local else None
-    return {"local": local, "demo_token": token or None}
+def page_config():
+    return {"sandbox": True}
 
 
 @app.post("/ask")
-def ask(body: AskRequest, graph=Depends(get_graph)):
+def ask(body: AskRequest, request: Request, response: Response):
+    graph = session_graph(request, response)
     return agent.answer(graph, body.question, default_at=body.at)
 
 
 @app.post("/baseline")
-def ask_baseline(body: BaselineRequest, graph=Depends(get_graph)):
+def ask_baseline(body: BaselineRequest, request: Request, response: Response):
+    graph = session_graph(request, response)
     return baseline.answer(graph, body.question)
 
 
-@app.post("/events", dependencies=[Depends(require_token)])
-def post_event(body: EventRequest, graph=Depends(get_graph)):
+@app.post("/events")
+def post_event(body: EventRequest, request: Request, response: Response):
+    graph = session_graph(request, response)
     if body.demo:
         return events.apply_demo_event(graph)
     if not body.text:
@@ -180,15 +178,16 @@ def post_event(body: EventRequest, graph=Depends(get_graph)):
 @app.get("/graph")
 def graph_view(
     request: Request,
+    response: Response,
     focus: str | None = Query(default=None, min_length=1, max_length=64),
     depth: int = Query(default=2, ge=1, le=3),
-    graph=Depends(get_graph),
 ):
     # Same path, two uses: a browser asking for the page gets HTML; the API gets JSON.
     if focus is None and "text/html" in request.headers.get("accept", ""):
         return _graph_page()
     if focus is None:
         raise StarletteHTTPException(422, "Query parameter 'focus' is required.")
+    graph = session_graph(request, response)
     view = paths.neighbourhood(graph, focus, depth)
     if view is None:
         raise StarletteHTTPException(404, f"No node with id '{focus}'.")
@@ -196,22 +195,48 @@ def graph_view(
 
 
 @app.get("/graph/all")
-def graph_everything(graph=Depends(get_graph)):
-    return paths.whole_graph(graph)
+def graph_everything(request: Request, response: Response):
+    return paths.whole_graph(session_graph(request, response))
 
 
-@app.post("/reset", dependencies=[Depends(require_token)])
-def reset(graph=Depends(get_graph)):
-    seed.reset(graph)
+def _initials(name: str) -> str:
+    return "".join(w[0] for w in name.split()[:2]).upper()
+
+
+@app.get("/api/overview")
+def overview(request: Request, response: Response):
+    """Counts, the services and people for the dashboard, and who owns each service now."""
+    data = paths.whole_graph(session_graph(request, response))
+    nodes = {n["id"]: n for n in data["nodes"]}
+    edges = data["edges"]
+    services = sorted(({"id": n["id"], "name": n["name"]} for n in nodes.values() if n["label"] == "Service"),
+                      key=lambda s: s["name"])
+    people = sorted(({"id": n["id"], "name": n["name"], "initials": _initials(n["name"])}
+                     for n in nodes.values() if n["label"] == "Person"), key=lambda p: p["name"])
+    open_tickets = {e["from"] for e in edges if e["type"] == "ASSIGNED_TO" and e["valid_to"] is None}
+    handovers = {e["source"] for e in edges if (e.get("source") or "").startswith("evt-")}
+    owners = {}
+    for e in edges:
+        if e["type"] == "OWNS" and not e["closed"]:
+            owners[e["to"]] = {"person": nodes[e["from"]]["name"], "person_id": e["from"],
+                               "since": e["valid_from"], "source": e["source"]}
+    return {"services": services, "people": people, "open_tickets": len(open_tickets),
+            "handovers": len(handovers), "owners": owners}
+
+
+@app.post("/reset")
+def reset(request: Request, response: Response):
+    seed.reset(session_graph(request, response))
     return {"ok": True}
 
 
 @app.get("/health")
 def health():
     try:
-        get_graph().ro_query("RETURN 1")
+        db.connect().ro_query("RETURN 1")
         db_status = "ok"
-    except Exception:
+    except Exception as e:
+        print(f"health: DB check failed: {type(e).__name__}: {e}", file=sys.stderr)
         db_status = "down"
     try:
         config.get_llm_settings()

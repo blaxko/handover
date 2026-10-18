@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app import baseline, llm, main
+from app import baseline, db, llm, main
 from app.main import app
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,10 +39,8 @@ def test_app_js_uses_the_ask_path():
     assert "setPathText()" in js and "highlightedEdges()" in js
 
 
-def test_event_result_carries_ids_and_graph_all_marks_closed(client, reseeded_graph):
-    from app import events
-
-    result = events.apply_demo_event(reseeded_graph)
+def test_event_result_carries_ids_and_graph_all_marks_closed(client):
+    result = client.post("/events", json={"demo": True}).json()
     assert result["ids"]["from"] == "p-tunde"
     assert result["ids"]["to"] == "p-ada"
     assert set(result["ids"]["services"]) == {"s-payments", "s-ledger"}
@@ -50,7 +48,6 @@ def test_event_result_carries_ids_and_graph_all_marks_closed(client, reseeded_gr
     whole = client.get("/graph/all").json()
     assert any(e["closed"] for e in whole["edges"])
     assert any(not e["closed"] for e in whole["edges"])
-
 
 def test_index_and_static_files_load(client):
     page = client.get("/")
@@ -110,34 +107,29 @@ def test_logo_mark_has_no_background_and_uses_current_colour():
     assert 'stroke="currentColor"' in mark
 
 
-def test_config_hides_token_from_non_local_clients(client, monkeypatch):
-    # TestClient connects as "testclient", which is not this machine.
+def test_config_never_exposes_a_token(client, monkeypatch):
     monkeypatch.setenv("DEMO_TOKEN", "secret-for-test")
     data = client.get("/config").json()
-    assert data == {"local": False, "demo_token": None}
+    assert "demo_token" not in data
+    assert "secret-for-test" not in client.get("/config").text
 
+def test_config_reports_sandbox_mode(client):
+    assert client.get("/config").json() == {"sandbox": True}
 
-def test_config_gives_token_to_local_clients(monkeypatch):
-    monkeypatch.setenv("DEMO_TOKEN", "secret-for-test")
-    with TestClient(app, client=("127.0.0.1", 50000)) as local:
-        data = local.get("/config").json()
-    assert data == {"local": True, "demo_token": "secret-for-test"}
-
-
-def test_event_endpoint_needs_token(client):
+def test_event_endpoint_needs_no_token(client):
+    # Each visitor has a private sandbox, so no token is required any more.
     resp = client.post("/events", json={"demo": True})
-    assert resp.status_code == 401
-    assert resp.json()["error"]["code"] == "HTTP_ERROR"
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "applied"
 
+def test_event_endpoint_ignores_a_token_header(client):
+    resp = client.post("/events", json={"demo": True}, headers={"X-Demo-Token": "anything"})
+    assert resp.status_code == 200
 
-def test_event_endpoint_rejects_wrong_token(client):
-    resp = client.post("/events", json={"demo": True}, headers={"X-Demo-Token": "nope"})
-    assert resp.status_code == 401
-
-
-def test_reset_needs_token(client):
-    assert client.post("/reset").status_code == 401
-
+def test_reset_needs_no_token(client):
+    resp = client.post("/reset")
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
 
 def test_validation_errors_use_the_error_shape(client):
     resp = client.post("/ask", json={"question": ""})
@@ -161,17 +153,14 @@ def test_graph_unknown_focus_is_404(client):
     assert client.get("/graph", params={"focus": "nope-123"}).status_code == 404
 
 
-def test_graph_marks_closed_edges(client, reseeded_graph, demo_token):
-    from app import events
-
-    events.apply_demo_event(reseeded_graph)
+def test_graph_marks_closed_edges(client):
+    client.post("/events", json={"demo": True})
     resp = client.get("/graph", params={"focus": "p-tunde", "depth": 1})
     assert resp.status_code == 200
     owns = [e for e in resp.json()["edges"] if e["type"] == "OWNS" and e["from"] == "p-tunde"]
     closed = {e["to"]: e["closed"] for e in owns}
     assert closed["s-payments"] is True
     assert closed["s-ledger"] is True
-
 
 def test_graph_depth_is_bounded(client):
     assert client.get("/graph", params={"focus": "p-tunde", "depth": 9}).status_code == 422
@@ -187,15 +176,13 @@ def test_cors_allows_only_the_app_origin(client):
 
 
 def test_falkordb_unreachable_gives_503(monkeypatch):
-    monkeypatch.setattr(main, "_graph", None)
+    monkeypatch.setattr(db, "_client", None)  # force a new client that uses the bad settings below
     monkeypatch.setenv("FALKORDB_HOST", "127.0.0.1")
     monkeypatch.setenv("FALKORDB_PORT", "1")  # nothing listens here
     with TestClient(app) as c:
         resp = c.post("/ask", json={"question": "Who owns ledger?"})
     assert resp.status_code == 503
     assert resp.json()["error"]["code"] == "DB_UNREACHABLE"
-    monkeypatch.setattr(main, "_graph", None)  # next test reconnects with the real settings
-
 
 def test_baseline_shape_and_rank(client, monkeypatch):
     # The LLM cites m99, which is not a snippet here, so the guard must remove it.
@@ -237,7 +224,8 @@ def test_baseline_llm_error_is_reported_not_raised(client, monkeypatch):
     assert "timed out" in data["error"]
 
 
-def test_demo_event_via_api_with_token(client, reseeded_graph, demo_token):
-    resp = client.post("/events", json={"demo": True}, headers={"X-Demo-Token": demo_token})
+def test_demo_event_via_api(client):
+    resp = client.post("/events", json={"demo": True})
     assert resp.status_code == 200
     assert resp.json()["status"] == "applied"
+

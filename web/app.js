@@ -239,9 +239,14 @@
       const n = state.view.nodes.get(id);
       if (n) nodes.set(id, n);
     }
+    // Direct neighbours only. Message nodes are left out unless they are on the answer path.
+    const onPath = highlightedNodeIds();
     for (const e of edges.values()) {
       for (const id of [e.from, e.to]) {
-        if (!nodes.has(id) && state.view.nodes.has(id)) nodes.set(id, state.view.nodes.get(id));
+        const n = state.view.nodes.get(id);
+        if (nodes.has(id) || !n) continue;
+        if (n.label === 'Message' && !onPath.has(id)) continue;
+        nodes.set(id, n);
       }
     }
     for (const e of highlightedEdges()) edges.set(edgeKey(e), e);
@@ -432,6 +437,7 @@
     setBusy(false, '');
     renderAnswer(graph);
     renderBaseline(baseline);
+    document.dispatchEvent(new CustomEvent('handover:answer', { detail: graph.ok ? graph.data : null }));
 
     if (graph.ok && graph.data.status === 'ok' && graph.data.path && graph.data.path.edges.length) {
       state.hl = { mode: 'answer', nodes: graph.data.path.nodes, edges: graph.data.path.edges };
@@ -448,12 +454,9 @@
     $('#token-row').hidden = !show;
   }
 
-  // True when no token is known yet. Shows the token field so the user can paste it.
+  // Nothing needs a token any more: each visitor has a private sandbox (see app/sandbox.py).
   function needToken() {
-    if (state.token) return false;
-    showTokenField(true);
-    $('#token').focus();
-    return true;
+    return false;
   }
 
   function eventSummary(d) {
@@ -474,7 +477,7 @@
     }
     out.className = 'notice';
     out.textContent = 'Applying…';
-    const res = await api('/events', { method: 'POST', body: payload, token: state.token });
+    const res = await api('/events', { method: 'POST', body: payload });
     if (!res.ok) {
       if (res.status === 401) showTokenField(true);
       out.className = 'notice err';
@@ -488,6 +491,7 @@
       state.hl = { mode: 'event', effective: d.ids.effective };
       const focus = [d.ids.from, d.ids.to, ...d.ids.services, ...d.ids.tickets];
       state.full = null;
+      document.dispatchEvent(new CustomEvent('handover:event', { detail: d }));
       await loadFocus(focus);
     } else if (d.status === 'already_applied') {
       out.className = 'notice warn';
@@ -500,13 +504,14 @@
 
   async function reset() {
     if (needToken()) return setBody($('#event-result'), notice('warn', 'Enter the demo token below, then reset again.'));
-    const res = await api('/reset', { method: 'POST', token: state.token });
+    const res = await api('/reset', { method: 'POST' });
     if (!res.ok) {
       if (res.status === 401) showTokenField(true);
       return setBody($('#event-result'), notice('err', res.message));
     }
     state.hl = null;
     state.full = null;
+    document.dispatchEvent(new CustomEvent('handover:reset'));
     setBody($('#answer'), el('p', { class: 'muted', text: 'Demo reset. Ask a question to start again.' }));
     setBody($('#baseline'), el('p', { class: 'muted', text: 'Demo reset.' }));
     $('#event-text').value = DEMO_EVENT;
@@ -532,12 +537,6 @@
     $('#event-text').value = DEMO_EVENT;
     setBody($('#examples'), EXAMPLES.map((ex) => el('button', { type: 'button', text: ex.label, onclick: () => ask(ex.q) })));
 
-    const cfg = await api('/config');
-    if (cfg.ok && cfg.data.demo_token) {
-      state.token = cfg.data.demo_token;
-    } else {
-      showTokenField(true);
-    }
     health();
     loadFocus(DEFAULT_FOCUS);
   }

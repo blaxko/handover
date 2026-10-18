@@ -8,6 +8,7 @@ Handover is a company-brain agent that knows who owns what *now*. It answers fro
 
 - **Company Brain** (primary)
 - **Agent Memory and Coordination** (secondary)
+- Each visitor gets an isolated graph (FalkorDB multigraph): 	idewell-<session id>, seeded on the first visit and deleted after 2 hours idle.
 
 ## Live demo
 
