@@ -1,4 +1,4 @@
-/* Handover demo page. No build step. Server text goes in with textContent only. */
+﻿/* Handover demo page. No build step. Server text goes in with textContent only. */
 (() => {
   'use strict';
 
@@ -14,12 +14,12 @@
   const DEFAULT_FOCUS = ['p-tunde'];
   const MAX_FOCUS = 6;
   const COLOURS = {
-    Person: { background: '#dbe7fd', border: '#2f6fed' },
-    Service: { background: '#d7f0e7', border: '#1f8a70' },
-    Ticket: { background: '#fde3cf', border: '#c2410c' },
-    Message: { background: '#ebe4f8', border: '#7c5cbf' },
-    Team: { background: '#e5e7eb', border: '#6b7280' },
-    Entity: { background: '#e5e7eb', border: '#6b7280' },
+    Person: { background: '#F1ECFF', border: '#8E74E8' },
+    Service: { background: '#FFFFFF', border: '#0E0E12' },
+    Ticket: { background: '#FFE3EF', border: '#FF4F9A' },
+    Message: { background: '#E9E6F2', border: '#6B6875' },
+    Team: { background: '#E9E6F2', border: '#6B6875' },
+    Entity: { background: '#E9E6F2', border: '#6B6875' },
   };
 
   // state.view: nodes and edges around the focus ids. state.full: whole graph (lazy).
@@ -316,11 +316,11 @@
             dashes: closed ? [6, 4] : false,
             width: onPath ? 4 : closed ? 1.5 : 1.25,
             color: onPath && !closed
-              ? { color: '#2f6fed', highlight: '#2f6fed' }
+              ? { color: '#FF4F9A', highlight: '#FF4F9A' }
               : closed
                 ? { color: '#8a929e', highlight: '#8a929e' }
-                : { color: '#1f2937', highlight: '#1f2937' },
-            font: { color: closed ? '#5b6370' : '#2f6fed', size: 12, strokeWidth: 0 },
+                : { color: '#0E0E12', highlight: '#0E0E12' },
+            font: { color: closed ? '#5b6370' : '#0E0E12', size: 12, strokeWidth: 0 },
           };
         });
       state.nodes.clear();

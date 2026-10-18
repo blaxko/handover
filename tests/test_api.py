@@ -56,8 +56,46 @@ def test_index_and_static_files_load(client):
     page = client.get("/")
     assert page.status_code == 200
     assert "<title>" in page.text
-    for path in ("/static/app.js", "/static/style.css"):
+    assert "Who owns it" in page.text  # landing page
+    for path in ("/static/app.js", "/static/style.css", "/static/theme.css", "/static/site.js",
+                 "/static/logo.svg", "/static/logo-mark.svg"):
         assert client.get(path).status_code == 200, path
+
+
+def test_dashboard_moved_to_app(client):
+    resp = client.get("/app")
+    assert resp.status_code == 200
+    assert 'id="ask-form"' in resp.text and 'id="graph"' in resp.text
+    assert "Hand it over" in resp.text and "← Home" in resp.text
+
+
+def test_marketing_pages_return_200(client):
+    assert client.get("/how-it-works").status_code == 200
+    proof = client.get("/proof")
+    assert proof.status_code == 200
+    assert "Graph against keyword search" in proof.text
+    assert "Who owns payments-api?" in proof.text  # a row from docs/baseline_results.md
+
+
+def test_graph_page_shows_templates_from_queries(client):
+    resp = client.get("/graph", headers={"Accept": "text/html"})
+    assert resp.status_code == 200
+    assert "T5 · apply_handover" in resp.text
+    # The page is built from queries.py. The arrows are HTML-escaped on the way in.
+    assert "MATCH (p:Person)-[o:OWNS]-&gt;(s:Service {id:$service})" in resp.text
+    assert "{{T1}}" not in resp.text
+
+
+def test_graph_json_api_unchanged_without_html_accept(client):
+    # No focus and no HTML accept header is still a 422, as before.
+    assert client.get("/graph").status_code == 422
+    assert client.get("/graph", params={"focus": "p-tunde", "depth": 1}).json()["nodes"]
+
+
+def test_logo_mark_has_no_background_and_uses_current_colour():
+    mark = (ROOT / "web" / "logo-mark.svg").read_text(encoding="utf-8")
+    assert "<rect" not in mark
+    assert 'stroke="currentColor"' in mark
 
 
 def test_config_hides_token_from_non_local_clients(client, monkeypatch):

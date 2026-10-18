@@ -1,0 +1,114 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How it works · Handover</title>
+  <meta name="description" content="Two loops: a question becomes a fixed Cypher query on FalkorDB, and a change event closes and opens edges.">
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css?v=12">
+  <script src="/static/site.js?v=11" defer></script>
+</head>
+<body>
+  <div class="sky" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+  <a class="sr-only" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Handover home"><span class="mark" aria-hidden="true"></span>Handover</a>
+      <nav class="nav" aria-label="Main">
+        <a href="/how-it-works" aria-current="page">How it works</a>
+        <a href="/graph">The graph</a>
+        <a href="/proof">Proof</a>
+        <a class="btn btn-ink only-desktop" href="/app" style="min-height:40px;padding:8px 16px;">Hand it over →</a>
+      </nav>
+      <button class="btn btn-glass menu-btn" type="button" aria-expanded="false" aria-controls="menu-panel" aria-label="Open menu">Menu</button>
+    </div>
+  </header>
+
+  <div class="menu-panel" id="menu-panel" aria-hidden="true" role="dialog" aria-label="Menu">
+    <button class="btn btn-glass menu-close" type="button">Close</button>
+    <a href="/how-it-works">How it works</a>
+    <a href="/graph">The graph</a>
+    <a href="/proof">Proof</a>
+    <a class="btn btn-primary" href="/app">Hand it over →</a>
+  </div>
+
+  <main id="main">
+    <section class="section wrap" aria-labelledby="how-title" style="padding-bottom:0">
+      <article class="box reveal">
+        <h1 id="how-title" style="font-size:clamp(2.2rem,5.4vw,4.2rem);">Two loops. One graph.</h1>
+        <p class="lead" style="margin-top:18px;">A question becomes a fixed query. A change event rewrites ownership without deleting it.</p>
+      </article>
+    </section>
+
+    <section class="section wrap" aria-labelledby="ask-loop">
+      <article class="box reveal">
+        <h2 id="ask-loop" style="font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:24px;">Ask</h2>
+        <div class="loop">
+          <div class="stop" style="--d:0s">
+            <span class="num" aria-hidden="true">1</span>
+            <h3>Question</h3>
+            <p>“Who owns payments-api?” The LLM sees five tool schemas. It never sees the data.</p>
+          </div>
+          <div class="stop" style="--d:3s">
+            <span class="num" aria-hidden="true">2</span>
+            <h3>Tool</h3>
+            <p>It picks one tool and fills in a name or a date. If it fails, a keyword router picks.</p>
+          </div>
+          <div class="stop" style="--d:6s">
+            <span class="num" aria-hidden="true">3</span>
+            <h3>Cypher</h3>
+            <p>A fixed, parameterised template runs on FalkorDB. The LLM writes no Cypher.</p>
+          </div>
+          <div class="stop" style="--d:9s">
+            <span class="num" aria-hidden="true">4</span>
+            <h3>Answer</h3>
+            <p>A short answer with the path it used and the messages that prove it.</p>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section wrap" aria-labelledby="handover-loop">
+      <article class="box reveal">
+        <h2 id="handover-loop" style="font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:24px;">Hand over</h2>
+        <div class="loop">
+          <div class="stop" style="--d:0s">
+            <span class="num" aria-hidden="true">1</span>
+            <h3>Event</h3>
+            <p>“Tunde left, Ada takes over.” Text becomes one fixed JSON shape. Anything else is rejected.</p>
+          </div>
+          <div class="stop" style="--d:3s">
+            <span class="num" aria-hidden="true">2</span>
+            <h3>Close and open</h3>
+            <p>Old ownership gets an end date. New ownership opens. Nothing is deleted.</p>
+          </div>
+          <div class="stop" style="--d:6s">
+            <span class="num" aria-hidden="true">3</span>
+            <h3>Move tickets</h3>
+            <p>Open tickets follow the new owner, each with a reason and a source.</p>
+          </div>
+          <div class="stop" style="--d:9s">
+            <span class="num" aria-hidden="true">4</span>
+            <h3>Look back</h3>
+            <p>“Who owned it on 2026-09-01?” still answers, because the history stayed.</p>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>Built for Graph Hacks</span>
+      <span>FalkorDB · synthetic data</span>
+    </div>
+  </footer>
+</body>
+</html>

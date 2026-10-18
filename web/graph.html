@@ -1,0 +1,106 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The graph · Handover</title>
+  <meta name="description" content="The data model and the Cypher templates Handover runs on FalkorDB.">
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css?v=12">
+  <script src="/static/site.js?v=11" defer></script>
+</head>
+<body>
+  <div class="sky" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+  <a class="sr-only" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Handover home"><span class="mark" aria-hidden="true"></span>Handover</a>
+      <nav class="nav" aria-label="Main">
+        <a href="/how-it-works">How it works</a>
+        <a href="/graph" aria-current="page">The graph</a>
+        <a href="/proof">Proof</a>
+        <a class="btn btn-ink only-desktop" href="/app" style="min-height:40px;padding:8px 16px;">Hand it over →</a>
+      </nav>
+      <button class="btn btn-glass menu-btn" type="button" aria-expanded="false" aria-controls="menu-panel" aria-label="Open menu">Menu</button>
+    </div>
+  </header>
+
+  <div class="menu-panel" id="menu-panel" aria-hidden="true" role="dialog" aria-label="Menu">
+    <button class="btn btn-glass menu-close" type="button">Close</button>
+    <a href="/how-it-works">How it works</a>
+    <a href="/graph">The graph</a>
+    <a href="/proof">Proof</a>
+    <a class="btn btn-primary" href="/app">Hand it over →</a>
+  </div>
+
+  <main id="main">
+    <section class="section wrap" aria-labelledby="model-title" style="padding-bottom:0">
+      <article class="box reveal">
+        <h1 id="model-title" style="font-size:clamp(2.2rem,5.4vw,4.2rem);">Nodes and edges, with dates.</h1>
+        <p class="lead" style="margin-top:18px;">Every ownership edge has a start, an optional end, and the message that proves it.</p>
+      </article>
+    </section>
+
+    <section class="section wrap" aria-labelledby="nodes-title">
+      <h2 id="nodes-title" style="font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:24px;">Nodes</h2>
+      <div class="model">
+        <article class="box reveal"><h3>Person</h3><p>id, name, aliases, status (active or left).</p></article>
+        <article class="box reveal"><h3>Team</h3><p>id, name.</p></article>
+        <article class="box reveal"><h3>Service</h3><p>id, name, aliases. The things people own.</p></article>
+        <article class="box reveal"><h3>Ticket</h3><p>id, name, status (open or closed).</p></article>
+        <article class="box reveal"><h3>Message</h3><p>id, ts, channel, text. The provenance for every edge.</p></article>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="edges-title">
+      <h2 id="edges-title" style="font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:24px;">Edges</h2>
+      <div class="model">
+        <article class="box reveal"><span class="rel">OWNS</span><h3>Person → Service</h3><p>valid_from, valid_to, source, closed_by. At most one open per service.</p></article>
+        <article class="box reveal"><span class="rel">MEMBER_OF</span><h3>Person → Team</h3><p>valid_from, valid_to.</p></article>
+        <article class="box reveal"><span class="rel">ASSIGNED_TO</span><h3>Ticket → Person</h3><p>valid_from, valid_to, reason, source.</p></article>
+        <article class="box reveal"><span class="rel">DEPENDS_ON</span><h3>Service → Service</h3><p>What breaks when the thing below it breaks.</p></article>
+        <article class="box reveal"><span class="rel">FOR · WORKED_ON · AUTHORED · ABOUT</span><h3>Links</h3><p>Ticket to service, person to service, person to message, message to service.</p></article>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="cypher-title">
+      <h2 id="cypher-title" style="font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:24px;">Four queries, as they run</h2>
+      <div class="stack">
+        <article class="box reveal snippet">
+          <h3>T1 · who_owns</h3>
+          <p>The owner of a service on a date. Edges are filtered by valid_from and valid_to, so history answers the same way as today.</p>
+          <pre class="code">{{T1}}</pre>
+        </article>
+        <article class="box reveal snippet">
+          <h3>T4 · blast_radius</h3>
+          <p>What a person owns now, the services that depend on it, and their open tickets. The dependency walk goes up to three hops.</p>
+          <pre class="code">{{T4}}</pre>
+        </article>
+        <article class="box reveal snippet">
+          <h3>T5 · apply_handover</h3>
+          <p>Records the event as a message, closes the old edges and opens the new ones in one request. Nothing is deleted.</p>
+          <pre class="code">{{T5}}</pre>
+        </article>
+        <article class="box reveal snippet">
+          <h3>T6 · reassign_tickets</h3>
+          <p>Moves open tickets from someone who left to the current owner. The new assignment starts on the event's effective date.</p>
+          <pre class="code">{{T6}}</pre>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>Built for Graph Hacks</span>
+      <span>FalkorDB · synthetic data</span>
+    </div>
+  </footer>
+</body>
+</html>

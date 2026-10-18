@@ -1,61 +1,21 @@
+﻿/* Dashboard styles. Colours come from theme.css tokens; this file only maps them to dashboard names. */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --ink: #15191f;
-  --ink-soft: #4b5563;
-  --line: #d9dde3;
-  --accent: #2f6fed;
-  --accent-ink: #ffffff;
-  --open: #1f2937;
-  --closed: #8a929e;
-  --warn-bg: #fff4e5;
-  --warn-ink: #7a3e00;
-  --err-bg: #fdecec;
-  --err-ink: #8b1d1d;
-  --ok-bg: #e7f6ef;
-  --ok-ink: #0d5a3b;
-  --radius: 10px;
-  --focus: 0 0 0 3px rgba(47, 111, 237, 0.45);
+  --bg: var(--cloud);
+  --surface: rgba(255, 255, 255, 0.82);
+  --ink-soft: var(--ink-2);
+  --accent: var(--pink);
+  --accent-ink: var(--ink);
+  --focus-ring: var(--lilac);
+  --open: var(--ink);
+  --closed: #8A8797;
+  --warn-bg: #FFF1E0;
+  --warn-ink: #7A3E00;
+  --err-bg: #FFE4EC;
+  --err-ink: #8B1D3F;
+  --ok-bg: #E6F7EE;
+  --ok-ink: #0D5A3B;
+  --radius: 18px;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1216;
-    --surface: #171b21;
-    --ink: #e8ebf0;
-    --ink-soft: #a7afbb;
-    --line: #2a3038;
-    --accent: #6d98f5;
-    --accent-ink: #0f1216;
-    --open: #e8ebf0;
-    --closed: #6b7380;
-    --warn-bg: #3a2a10;
-    --warn-ink: #ffd49a;
-    --err-bg: #3a1717;
-    --err-ink: #ffb4b4;
-    --ok-bg: #123325;
-    --ok-ink: #9ee6c3;
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg: #0f1216;
-  --surface: #171b21;
-  --ink: #e8ebf0;
-  --ink-soft: #a7afbb;
-  --line: #2a3038;
-  --accent: #6d98f5;
-  --accent-ink: #0f1216;
-  --open: #e8ebf0;
-  --closed: #6b7380;
-  --warn-bg: #3a2a10;
-  --warn-ink: #ffd49a;
-  --err-bg: #3a1717;
-  --err-ink: #ffb4b4;
-  --ok-bg: #123325;
-  --ok-ink: #9ee6c3;
-}
-
 * { box-sizing: border-box; }
 
 body {
@@ -193,4 +153,12 @@ details.cypher pre {
   .ask form button { width: 100%; }
   #graph { height: 360px; }
   .event .row button { flex: 1 1 100%; }
+}
+
+/* Tap targets: at least 44px on phones. */
+@media (max-width: 768px) {
+  .examples button, .chip, .home-link, .ask button, .top-actions .btn, .graph-toolbar button, .btn {
+    min-height: 44px;
+  }
+  .home-link { display: inline-flex; align-items: center; }
 }

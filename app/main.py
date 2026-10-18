@@ -10,14 +10,17 @@ import redis
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+import html
+
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import agent, baseline, config, db, events, llm, paths, seed
+from app import agent, baseline, config, db, events, llm, paths, queries, seed
 from app.models import AskRequest, BaselineRequest, EventRequest
 
-WEB = Path(__file__).resolve().parent.parent / "web"
+ROOT = Path(__file__).resolve().parent.parent
+WEB = ROOT / "web"
 LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost"}
 
 app = FastAPI(title="Handover", version="0.7.0")
@@ -79,6 +82,61 @@ def index():
     return FileResponse(WEB / "index.html")
 
 
+@app.get("/app", include_in_schema=False)
+def dashboard():
+    return FileResponse(WEB / "app.html")
+
+
+@app.get("/how-it-works", include_in_schema=False)
+def how_it_works():
+    return FileResponse(WEB / "how-it-works.html")
+
+
+def _graph_page() -> HTMLResponse:
+    """The data model page. Cypher is shown from app/queries.py, so the page never drifts."""
+    text = (WEB / "graph.html").read_text(encoding="utf-8")
+    templates = {
+        "T1": queries.T1_WHO_OWNS,
+        "T4": queries.T4_BLAST_RADIUS,
+        "T5": queries.T5_APPLY_HANDOVER,
+        "T6": queries.T6_REASSIGN_TICKETS,
+    }
+    for key, template in templates.items():
+        text = text.replace("{{" + key + "}}", html.escape(template.strip(), quote=False))
+    return HTMLResponse(text)
+
+
+def _baseline_table() -> str:
+    """The graph-vs-baseline table from docs/baseline_results.md, as HTML. Scores stay blank."""
+    lines = (ROOT / "docs" / "baseline_results.md").read_text(encoding="utf-8").splitlines()
+    rows = [l for l in lines if l.startswith("|") and not l.startswith("|---")]
+    if not rows:
+        return "<p class='muted'>No baseline results have been recorded yet.</p>"
+    cells = [[c.strip() for c in r.strip()[1:-1].split("|")] for r in rows]
+    head, body = cells[0], cells[1:]
+    out = ["<div class='table-wrap'><table><thead><tr>"]
+    out += [f"<th>{html.escape(c)}</th>" for c in head]
+    out += ["</tr></thead><tbody>"]
+    for row in body:
+        out.append("<tr>")
+        for i, c in enumerate(row):
+            text = c if c else "—"
+            out.append(f"<td>{html.escape(text)}</td>")
+        out.append("</tr>")
+    out.append("</tbody></table></div>")
+    return "".join(out)
+
+
+@app.get("/proof", include_in_schema=False)
+def proof():
+    text = (WEB / "proof.html").read_text(encoding="utf-8")
+    text = text.replace("{{GOLDEN}}", html.escape(
+        "12 of 12 golden questions passed in the last run, through the API with the live LLM. "
+        "The keyword baseline is shown beside the graph answers, unscored."))
+    text = text.replace("{{BASELINE_TABLE}}", _baseline_table())
+    return HTMLResponse(text)
+
+
 @app.get("/config")
 def page_config(request: Request):
     """The demo token goes to the page only when the server is reached from this machine."""
@@ -115,10 +173,16 @@ def post_event(body: EventRequest, graph=Depends(get_graph)):
 
 @app.get("/graph")
 def graph_view(
-    focus: str = Query(min_length=1, max_length=64),
+    request: Request,
+    focus: str | None = Query(default=None, min_length=1, max_length=64),
     depth: int = Query(default=2, ge=1, le=3),
     graph=Depends(get_graph),
 ):
+    # Same path, two uses: a browser asking for the page gets HTML; the API gets JSON.
+    if focus is None and "text/html" in request.headers.get("accept", ""):
+        return _graph_page()
+    if focus is None:
+        raise StarletteHTTPException(422, "Query parameter 'focus' is required.")
     view = paths.neighbourhood(graph, focus, depth)
     if view is None:
         raise StarletteHTTPException(404, f"No node with id '{focus}'.")

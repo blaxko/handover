@@ -1,0 +1,84 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proof · Handover</title>
+  <meta name="description" content="Golden question results, and the graph against a keyword-search baseline, side by side.">
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css?v=12">
+  <script src="/static/site.js?v=11" defer></script>
+</head>
+<body>
+  <div class="sky" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+  <a class="sr-only" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Handover home"><span class="mark" aria-hidden="true"></span>Handover</a>
+      <nav class="nav" aria-label="Main">
+        <a href="/how-it-works">How it works</a>
+        <a href="/graph">The graph</a>
+        <a href="/proof" aria-current="page">Proof</a>
+        <a class="btn btn-ink only-desktop" href="/app" style="min-height:40px;padding:8px 16px;">Hand it over →</a>
+      </nav>
+      <button class="btn btn-glass menu-btn" type="button" aria-expanded="false" aria-controls="menu-panel" aria-label="Open menu">Menu</button>
+    </div>
+  </header>
+
+  <div class="menu-panel" id="menu-panel" aria-hidden="true" role="dialog" aria-label="Menu">
+    <button class="btn btn-glass menu-close" type="button">Close</button>
+    <a href="/how-it-works">How it works</a>
+    <a href="/graph">The graph</a>
+    <a href="/proof">Proof</a>
+    <a class="btn btn-primary" href="/app">Hand it over →</a>
+  </div>
+
+  <main id="main">
+    <section class="section wrap" aria-labelledby="proof-title" style="padding-bottom:0">
+      <article class="box reveal">
+        <h1 id="proof-title" style="font-size:clamp(2.2rem,5.4vw,4.2rem);">Twelve questions. Checked.</h1>
+        <p class="lead" style="margin-top:18px;">{{GOLDEN}}</p>
+      </article>
+    </section>
+
+    <section class="section wrap" aria-labelledby="golden-title">
+      <h2 id="golden-title" style="font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:24px;">Golden questions</h2>
+      <div class="model">
+        <article class="box reveal"><h3>1 · Who owns payments-api?</h3><p>Tunde Bakare, source m01.</p></article>
+        <article class="box reveal"><h3>2 · Who owns ledger?</h3><p>Tunde, source m02.</p></article>
+        <article class="box reveal"><h3>3 · Who owned ledger in 2025-06?</h3><p>Segun Bello, source m00.</p></article>
+        <article class="box reveal"><h3>4 · What breaks if TB leaves?</h3><p>Two services, their dependents and two open tickets.</p></article>
+        <article class="box reveal"><h3>5 · Who knows payments-api besides the owner?</h3><p>Ada Okafor first.</p></article>
+        <article class="box reveal"><h3>6 · The change event</h3><p>Two edges closed, two opened, two tickets moved.</p></article>
+        <article class="box reveal"><h3>7 · Who owns payments-api now?</h3><p>Ada Okafor, sourced from the event.</p></article>
+        <article class="box reveal"><h3>8 · Who owned payments-api on 2026-09-01?</h3><p>Tunde Bakare. History kept.</p></article>
+        <article class="box reveal"><h3>9 · What changed since 2026-10-15?</h3><p>Ownership and ticket changes from the event.</p></article>
+        <article class="box reveal"><h3>10 · Who is t-101 assigned to?</h3><p>Ada Okafor, after the event.</p></article>
+        <article class="box reveal"><h3>11 · What does Ada work on?</h3><p>Asks which Ada you mean.</p></article>
+        <article class="box reveal"><h3>12 · Who owns billing?</h3><p>Unknown service, with suggestions.</p></article>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="table-title">
+      <h2 id="table-title" style="font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:12px;">Graph against keyword search</h2>
+      <p class="muted" style="margin-bottom:24px;max-width:70ch;">The same question, answered two ways. The baseline is the FalkorDB full-text index with a simple keyword re-rank, top 3 messages, no hand-picked answers. Scores are left blank on purpose.</p>
+      <article class="box reveal" style="padding:0;">
+        {{BASELINE_TABLE}}
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>Built for Graph Hacks</span>
+      <span>FalkorDB · synthetic data</span>
+    </div>
+  </footer>
+</body>
+</html>
