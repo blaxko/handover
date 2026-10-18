@@ -1,4 +1,4 @@
-"""Deployment and setup files: what the README and Railway depend on."""
+﻿"""Deployment and setup files: what the README and Railway depend on."""
 import json
 from pathlib import Path
 
@@ -59,7 +59,7 @@ def test_readme_copies_every_query_verbatim_from_queries_py():
 
 def test_readme_and_accuracy_show_the_same_scores():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "**12/12**" in readme and "**3/12**" in readme
+    assert "**11/11 questions**" in readme and "**3/11**" in readme
     doc = (ROOT / "docs" / "baseline_results.md").read_text(encoding="utf-8")
-    assert "**Total: graph 12/12, keyword search 3/12**" in doc
-    assert "LIVE-URL-HERE" in readme  # placeholder until the URL exists
+    assert "**Total: graph 11/11 questions, keyword search 3/11**" in doc
+    assert "https://handover-production-b7e1.up.railway.app/" in readme

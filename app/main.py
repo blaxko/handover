@@ -129,7 +129,7 @@ def _baseline_table() -> str:
 def accuracy():
     text = (WEB / "accuracy.html").read_text(encoding="utf-8")
     text = text.replace("{{ACCURACY_SUMMARY}}", html.escape(
-        "Graph: 12/12 · Keyword search: 3/12. Both answer the same questions from the same messages. "
+        "Graph: 11/11 questions · Keyword search: 3/11 · Handover event applied correctly. Both answer the same questions from the same messages. "
         "Each keyword answer is marked against the expected answer; the rows are below."))
     text = text.replace("{{BASELINE_TABLE}}", _baseline_table())
     return HTMLResponse(text)

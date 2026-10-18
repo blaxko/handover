@@ -70,7 +70,7 @@ def test_marketing_pages_return_200(client):
     assert client.get("/how-it-works").status_code == 200
     accuracy = client.get("/accuracy")
     assert accuracy.status_code == 200
-    assert "Graph: 12/12 · Keyword search: 3/12" in accuracy.text
+    assert "Graph: 11/11 questions · Keyword search: 3/11 · Handover event applied correctly" in accuracy.text
     assert "Who owns payments-api?" in accuracy.text  # a row from docs/baseline_results.md
     assert "hackathon" not in accuracy.text.lower()
 

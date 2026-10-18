@@ -4,7 +4,7 @@ Handover is a company brain on a graph that always knows who owns what now: it s
 
 ## Live demo
 
-LIVE-URL-HERE
+https://handover-production-b7e1.up.railway.app/
 
 Each visitor gets a private sandbox. The first load takes about 10 seconds while your workspace is set up.
 
@@ -383,10 +383,12 @@ Baseline = FalkorDB full-text index + simple keyword re-rank, top 3 messages, no
 
 | | Score |
 |---|---|
-| Graph | **12/12** |
-| Keyword search | **3/12** |
+| Graph | **11/11 questions** |
+| Keyword search | **3/11** |
 
-Keyword search gets the owner right for payments-api now (question 1), for who owned payments-api on 2026-09-01 (question 8), and for "who owns billing" (an unknown service, question 12). It misses the ledger owner, the June 2025 ledger owner, the change event, the ticket owner, the clarification and the multi-hop question. The row-by-row verdicts, with reasons, are in [docs/baseline_results.md](docs/baseline_results.md) and on the `/accuracy` page.
+Handover event applied correctly (row 6 of the table, a change event, is not scored).
+
+Keyword search gets the owner right for payments-api now (question 1), for who owned payments-api on 2026-09-01 (question 8), and for "who owns billing" (an unknown service, question 12). It misses the ledger owner, the June 2025 ledger owner, the ticket owner, the clarification and the multi-hop question. The row-by-row verdicts, with reasons, are in [docs/baseline_results.md](docs/baseline_results.md) and on the `/accuracy` page.
 
 ## AI assistance disclosure
 

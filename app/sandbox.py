@@ -74,6 +74,15 @@ def _reap_if_due(now: float) -> None:
         reap(now)
 
 
+def _retry_once(fn):
+    """Run an idempotent step again after one dropped connection."""
+    try:
+        return fn()
+    except db.CONNECTION_ERRORS:
+        db.reset_client()
+        return fn()
+
+
 def ensure(sid: str):
     """Return this session's graph, creating and seeding it on first use."""
     now = time.time()
@@ -81,11 +90,11 @@ def ensure(sid: str):
     rows = _read(ctrl, queries.SANDBOX_LOOKUP, {"sid": sid})
     if not rows:
         _reap_if_due(now)
-        graph = db.connect(graph_name=graph_name(sid))
-        seed.reset(graph)
-        db.write(ctrl, queries.SANDBOX_CREATE,
-                 {"sid": sid, "graph": graph_name(sid), "now": now})
-        return graph
+        # Seeding drops and recreates the graph, and the registry write is a MERGE, so both can be repeated.
+        _retry_once(lambda: seed.reset(db.connect(graph_name=graph_name(sid))))
+        _retry_once(lambda: db.write(_control(), queries.SANDBOX_CREATE,
+                                     {"sid": sid, "graph": graph_name(sid), "now": now}))
+        return db.connect(graph_name=graph_name(sid))
     if now - (rows[0]["seen"] or 0) >= TOUCH_EVERY_S:
         db.write(ctrl, queries.SANDBOX_TOUCH, {"sid": sid, "now": now})
     return db.connect(graph_name=graph_name(sid))
