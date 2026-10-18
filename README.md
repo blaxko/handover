@@ -1,4 +1,4 @@
-# Handover
+﻿# Handover
 
 ## Overview
 
@@ -267,6 +267,6 @@ Built with Claude Code (Anthropic) for scaffolding the API and UI. Graph model, 
 
 All data is synthetic. The company "Tidewell", its people, services, tickets, and messages are fictional. No real employees, companies, or Slack/Gmail/Jira data are used.
 
-## Image credits
+## Credits
 
-- Hero photo (`web/img/hands.webp`): photographer name and source link to be added. Free-licence photo from Unsplash or Pexels, cropped and compressed for the page.
+- Hero photo by Alexander Mass on Pexels: https://www.pexels.com/@rebornfilmes/
