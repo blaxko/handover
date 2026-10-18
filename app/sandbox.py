@@ -12,7 +12,7 @@ import time
 
 import redis
 
-from app import db, seed
+from app import db, queries, seed
 
 CONTROL = "handover-sandboxes"
 IDLE_S = 2 * 60 * 60
@@ -54,17 +54,16 @@ def reap(now: float | None = None) -> int:
     """Delete idle sandboxes, then the least recently used ones beyond CAP. Returns how many went."""
     now = time.time() if now is None else now
     ctrl = _control()
-    stale = _read(ctrl, "MATCH (s:Sandbox) WHERE s.last_seen < $cutoff RETURN s.sid AS sid, s.graph AS graph",
+    stale = _read(ctrl, queries.SANDBOX_STALE,
                     {"cutoff": now - IDLE_S})
-    live = _read(ctrl, "MATCH (s:Sandbox) RETURN s.sid AS sid, s.graph AS graph, s.last_seen AS seen "
-                         "ORDER BY s.last_seen ASC")
+    live = _read(ctrl, queries.SANDBOX_LIVE_OLDEST_FIRST)
     stale_ids = {r["sid"] for r in stale}
     live = [r for r in live if r["sid"] not in stale_ids]
     overflow = max(0, len(live) - CAP)
     doomed = stale + live[:overflow]
     for row in doomed:
         db.connect(graph_name=row["graph"]).delete()
-        db.write(ctrl, "MATCH (s:Sandbox {sid:$sid}) DELETE s", {"sid": row["sid"]})
+        db.write(ctrl, queries.SANDBOX_DELETE, {"sid": row["sid"]})
     return len(doomed)
 
 
@@ -79,14 +78,14 @@ def ensure(sid: str):
     """Return this session's graph, creating and seeding it on first use."""
     now = time.time()
     ctrl = _control()
-    rows = _read(ctrl, "MATCH (s:Sandbox {sid:$sid}) RETURN s.last_seen AS seen", {"sid": sid})
+    rows = _read(ctrl, queries.SANDBOX_LOOKUP, {"sid": sid})
     if not rows:
         _reap_if_due(now)
         graph = db.connect(graph_name=graph_name(sid))
         seed.reset(graph)
-        db.write(ctrl, "MERGE (s:Sandbox {sid:$sid}) SET s.graph=$graph, s.last_seen=$now",
+        db.write(ctrl, queries.SANDBOX_CREATE,
                  {"sid": sid, "graph": graph_name(sid), "now": now})
         return graph
     if now - (rows[0]["seen"] or 0) >= TOUCH_EVERY_S:
-        db.write(ctrl, "MATCH (s:Sandbox {sid:$sid}) SET s.last_seen=$now", {"sid": sid, "now": now})
+        db.write(ctrl, queries.SANDBOX_TOUCH, {"sid": sid, "now": now})
     return db.connect(graph_name=graph_name(sid))

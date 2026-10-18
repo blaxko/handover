@@ -129,8 +129,8 @@ def _baseline_table() -> str:
 def accuracy():
     text = (WEB / "accuracy.html").read_text(encoding="utf-8")
     text = text.replace("{{ACCURACY_SUMMARY}}", html.escape(
-        "12 of 12 test questions answered correctly in the last run, through the API with the live LLM. "
-        "The keyword search is shown beside the graph answers, unscored."))
+        "Graph: 12/12 · Keyword search: 3/12. Both answer the same questions from the same messages. "
+        "Each keyword answer is marked against the expected answer; the rows are below."))
     text = text.replace("{{BASELINE_TABLE}}", _baseline_table())
     return HTMLResponse(text)
 
@@ -233,7 +233,7 @@ def reset(request: Request, response: Response):
 @app.get("/health")
 def health():
     try:
-        db.connect().ro_query("RETURN 1")
+        db.read(db.connect(), queries.PING)
         db_status = "ok"
     except Exception as e:
         print(f"health: DB check failed: {type(e).__name__}: {e}", file=sys.stderr)

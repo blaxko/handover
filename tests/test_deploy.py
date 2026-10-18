@@ -29,3 +29,37 @@ def test_readme_setup_and_baseline_note_present():
     assert "Baseline = FalkorDB full-text index + simple keyword re-rank, top 3 messages, no hand-picked answers." in readme
     setup = readme.split("## Setup (local)", 1)[1].split("\n## ", 1)[0]
     assert "requirements.txt" in setup and "db/load.py --reset" in setup and "/health" in setup
+
+
+def test_readme_sections_are_in_the_agreed_order():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    headings = [line for line in readme.splitlines() if line.startswith("## ") or line.startswith("# ")]
+    expected = ["# Handover", "## Live demo", "## Tracks", "## How it works", "## Architecture",
+                "## Graph data model", "## Cypher queries", "## Setup (local)", "## Baseline comparison",
+                "## AI assistance disclosure", "## Synthetic data statement", "## Credits"]
+    found = [next(h for h in headings if h.startswith(e)) for e in expected]
+    assert found == [h for h in headings if any(h.startswith(e) for e in expected)]
+    positions = [readme.index(h) for h in found]
+    assert positions == sorted(positions)
+    assert "Handover is a company brain on a graph that always knows who owns what now" in readme
+
+
+def test_readme_copies_every_query_verbatim_from_queries_py():
+    import re
+
+    from app import queries
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    src = (ROOT / "app" / "queries.py").read_text(encoding="utf-8")
+    names = re.findall(r'^([A-Z][A-Z0-9_]+) = """', src, re.M)
+    assert len(names) >= 25
+    for name in names:
+        assert getattr(queries, name).strip() in readme, name
+
+
+def test_readme_and_accuracy_show_the_same_scores():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "**12/12**" in readme and "**3/12**" in readme
+    doc = (ROOT / "docs" / "baseline_results.md").read_text(encoding="utf-8")
+    assert "**Total: graph 12/12, keyword search 3/12**" in doc
+    assert "LIVE-URL-HERE" in readme  # placeholder until the URL exists

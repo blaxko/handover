@@ -1,4 +1,4 @@
-"""Load the Tidewell seed and indexes into FalkorDB.
+﻿"""Load the Tidewell seed and indexes into FalkorDB.
 
     python db/load.py --reset    drop graph, run seed.cypher + indexes.cypher
     python db/load.py --check    print node and edge counts
@@ -15,8 +15,8 @@ from app.config import get_settings  # noqa: E402
 
 
 def check(graph) -> None:
-    nodes = db.read(graph, "MATCH (n) RETURN labels(n)[0] AS label, count(*) AS c ORDER BY label")
-    edges = db.read(graph, "MATCH ()-[r]->() RETURN type(r) AS type, count(*) AS c ORDER BY type")
+    nodes = db.read(graph, queries.COUNT_NODES_BY_LABEL)
+    edges = db.read(graph, queries.COUNT_EDGES_BY_TYPE)
     print("nodes:")
     for r in nodes:
         print(f"  {r['label']:<10} {r['c']}")

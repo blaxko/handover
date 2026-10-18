@@ -272,3 +272,43 @@ def focus_node(graph, focus: str) -> list[dict]:
 
 def neighbourhood(graph, focus: str, depth: int) -> list[dict]:
     return db.read(graph, GRAPH_NEIGHBOURHOOD, {"focus": focus, "depth": depth})
+
+# ---- sandbox registry (app/sandbox.py): one :Sandbox node per visitor session in the control graph ----
+
+SANDBOX_LOOKUP = """
+MATCH (s:Sandbox {sid:$sid}) RETURN s.last_seen AS seen
+"""
+
+SANDBOX_CREATE = """
+MERGE (s:Sandbox {sid:$sid}) SET s.graph=$graph, s.last_seen=$now
+"""
+
+SANDBOX_TOUCH = """
+MATCH (s:Sandbox {sid:$sid}) SET s.last_seen=$now
+"""
+
+SANDBOX_STALE = """
+MATCH (s:Sandbox) WHERE s.last_seen < $cutoff RETURN s.sid AS sid, s.graph AS graph
+"""
+
+SANDBOX_LIVE_OLDEST_FIRST = """
+MATCH (s:Sandbox) RETURN s.sid AS sid, s.graph AS graph, s.last_seen AS seen ORDER BY s.last_seen ASC
+"""
+
+SANDBOX_DELETE = """
+MATCH (s:Sandbox {sid:$sid}) DELETE s
+"""
+
+# ---- health and load checks ----
+
+PING = """
+RETURN 1
+"""
+
+COUNT_NODES_BY_LABEL = """
+MATCH (n) RETURN labels(n)[0] AS label, count(*) AS c ORDER BY label
+"""
+
+COUNT_EDGES_BY_TYPE = """
+MATCH ()-[r]->() RETURN type(r) AS type, count(*) AS c ORDER BY type
+"""
